@@ -33,11 +33,23 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
 
     private var sessao: AVCaptureSession?
     private var previewLayer: AVCaptureVideoPreviewLayer?
+    /// Tela de aviso em exibicao, para retirar quando a permissao for concedida.
+    private weak var avisoEmTela: UIView?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
         adicionarBotaoCancelar()
+        verificarPermissaoEConfigurar()
+
+        // Voltou das Configuracoes: reconsulta e abre a camera se agora pode.
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(voltouAoPrimeiroPlano),
+            name: UIApplication.didBecomeActiveNotification, object: nil)
+    }
+
+    @objc private func voltouAoPrimeiroPlano() {
+        guard sessao == nil else { return }
         verificarPermissaoEConfigurar()
     }
 
@@ -54,18 +66,16 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
     // MARK: - Permissão
 
     private func verificarPermissaoEConfigurar() {
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            configurarCamera()
-        case .notDetermined:
-            AVCaptureDevice.requestAccess(for: .video) { [weak self] concedido in
-                DispatchQueue.main.async {
-                    if concedido { self?.configurarCamera() }
-                    else { self?.mostrarAviso(permissaoNegada: true) }
-                }
+        // Estados e textos definidos em `comum/permissoes.md`.
+        Task { @MainActor in
+            let estado = await Permissoes.garantirCamera()
+            if estado.podeUsarCamera {
+                avisoEmTela?.removeFromSuperview()
+                avisoEmTela = nil
+                configurarCamera()
+            } else {
+                mostrarAviso(estado: estado)
             }
-        default: // .denied, .restricted
-            mostrarAviso(permissaoNegada: true)
         }
     }
 
@@ -75,7 +85,7 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
         let s = AVCaptureSession()
         guard let device = AVCaptureDevice.default(for: .video),
               let input = try? AVCaptureDeviceInput(device: device) else {
-            mostrarAviso(permissaoNegada: false)
+            mostrarAviso()   // sem camera no aparelho, nao e questao de permissao
             return
         }
         s.addInput(input)
@@ -145,29 +155,35 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
 
     // MARK: - Aviso (sem câmera / permissão negada)
 
-    private func mostrarAviso(permissaoNegada: Bool) {
+    private func mostrarAviso(estado: EstadoPermissao? = nil) {
+        let permissaoNegada = estado != nil
         let container = UIStackView()
         container.axis = .vertical
         container.spacing = 14
         container.alignment = .center
         container.translatesAutoresizingMaskIntoConstraints = false
 
-        let icone = UIImageView(image: UIImage(systemName: permissaoNegada ? "video.slash" : "camera.slash"))
+        let icone = UIImageView(image: UIImage(systemName: permissaoNegada ? "camera.fill.badge.ellipsis" : "camera.slash"))
         icone.tintColor = .white
         icone.contentMode = .scaleAspectFit
         icone.heightAnchor.constraint(equalToConstant: 52).isActive = true
 
         let titulo = UILabel()
-        titulo.text = permissaoNegada ? "Sem acesso à câmera" : "Câmera não disponível"
+        titulo.text = permissaoNegada ? "Acesso à câmera negado" : "Câmera não disponível"
         titulo.textColor = .white
         titulo.font = .systemFont(ofSize: 20, weight: .semibold)
         titulo.textAlignment = .center
         titulo.numberOfLines = 0
 
         let msg = UILabel()
-        msg.text = permissaoNegada
-            ? "Autorize a câmera em Ajustes para ler o código de barras, ou digite o ISBN manualmente."
-            : "Este dispositivo não tem câmera (por exemplo, o simulador). Digite o ISBN manualmente."
+        msg.text = switch estado {
+        case .restrita:
+            "O acesso à câmera está bloqueado neste dispositivo."
+        case .some:
+            "Para escanear o código de barras, permita o acesso à câmera nas configurações do dispositivo."
+        case .none:
+            "Este dispositivo não tem câmera (por exemplo, o simulador). Digite o ISBN manualmente."
+        }
         msg.textColor = UIColor.white.withAlphaComponent(0.85)
         msg.font = .systemFont(ofSize: 15)
         msg.textAlignment = .center
@@ -178,15 +194,17 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
         container.addArrangedSubview(msg)
         container.setCustomSpacing(24, after: msg)
 
-        if permissaoNegada {
-            container.addArrangedSubview(botao(titulo: "Abrir Ajustes", preenchido: true, acao: #selector(abrirAjustes)))
+        // Nao adianta oferecer Configuracoes quando a permissao e restrita.
+        if estado?.adiantaAbrirConfiguracoes == true {
+            container.addArrangedSubview(botao(titulo: "Abrir Configurações", preenchido: true, acao: #selector(abrirAjustes)))
         }
         if temEntradaManual {
             container.addArrangedSubview(botao(titulo: "Digitar ISBN", preenchido: !permissaoNegada, acao: #selector(digitarISBN)))
         }
-        container.addArrangedSubview(botao(titulo: "Fechar", preenchido: false, acao: #selector(cancelar)))
+        container.addArrangedSubview(botao(titulo: "Cancelar", preenchido: false, acao: #selector(cancelar)))
 
         view.addSubview(container)
+        avisoEmTela = container
         NSLayoutConstraint.activate([
             container.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             container.centerYAnchor.constraint(equalTo: view.centerYAnchor),
@@ -211,10 +229,9 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
     }
 
     @objc private func abrirAjustes() {
-        if let url = URL(string: UIApplication.openSettingsURLString) {
-            UIApplication.shared.open(url)
-        }
-        onFechar?()
+        // Nao fecha o scanner: ao voltar, didBecomeActive reconsulta a permissao
+        // e abre a camera sozinho, sem obrigar o usuario a navegar de novo.
+        Permissoes.abrirConfiguracoes()
     }
 
     @objc private func digitarISBN() {

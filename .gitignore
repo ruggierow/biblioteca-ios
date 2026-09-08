@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+**/*.xcuserdatad/
+*.xcuserstate
+DerivedData/
+build/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Gerado pelo Xcode — não commitar
+Biblioteca.App.xcodeproj/project.xcworkspace/xcuserdata/
+Biblioteca-iPhone.xcodeproj/project.xcworkspace/xcuserdata/

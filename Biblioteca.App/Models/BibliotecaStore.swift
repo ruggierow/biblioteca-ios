@@ -7,6 +7,7 @@ class BibliotecaStore: ObservableObject {
     @Published var arquivoURL: URL? = nil
     @Published var erroMensagem: String? = nil
     @Published var ultimaGravacao: Date? = nil
+    @Published var ultimaRecarga: Date? = nil
 
     // MARK: - Identificação do arquivo (local visível ao usuário)
 
@@ -48,6 +49,7 @@ class BibliotecaStore: ObservableObject {
                                                 relativeTo: nil)
             UserDefaults.standard.set(bookmark, forKey: Self.bookmarkKey)
             arquivoURL = url
+            configurarFotoStore(para: url)
             carregarDoArquivo(url)
         } catch {
             erroMensagem = "Erro ao vincular arquivo: \(error.localizedDescription)"
@@ -67,6 +69,7 @@ class BibliotecaStore: ObservableObject {
                 return
             }
             guard url.startAccessingSecurityScopedResource() else { return }
+            configurarFotoStore(para: url)
             carregarDoArquivo(url)
             url.stopAccessingSecurityScopedResource()
             arquivoURL = url
@@ -75,10 +78,22 @@ class BibliotecaStore: ObservableObject {
         }
     }
 
+    private func configurarFotoStore(para url: URL) {
+        let datURL = url.deletingLastPathComponent().appendingPathComponent("biblioteca.dat")
+        FotoStore.shared.iCloudDatURL = datURL
+        // URL com security scope para que FotoStore possa escrever na pasta via NSFileCoordinator
+        FotoStore.shared.iCloudArquivoURL = url
+        // Traz fotos novas do iCloud para o aparelho
+        FotoStore.shared.sincronizarComDat()
+        // Publica todas as fotos locais no iCloud (cria biblioteca.dat se ainda não existe)
+        FotoStore.shared.publicarNoICloud()
+    }
+
     func carregarDoArquivo(_ url: URL) {
         do {
             let texto = try lerCoordenado(url)
             livros = parsear(texto)
+            ultimaRecarga = Date()
         } catch {
             erroMensagem = "Erro ao carregar: \(error.localizedDescription)"
         }

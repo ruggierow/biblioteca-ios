@@ -6,6 +6,11 @@ struct ContentView: View {
     @State private var mostrarScanner = false
     @State private var isbnEscaneado: String? = nil
 
+    private var versaoApp: String {
+        let versao = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        return "v.\(versao ?? "1.0.0")"
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -21,7 +26,7 @@ struct ContentView: View {
 
                 List {
                     Section {
-                        HomeHeader(livrosCount: store.livros.count)
+                        HomeHeader(livrosCount: store.livros.count, versionText: versaoApp)
                             .listRowInsets(EdgeInsets())
                             .listRowBackground(Color.clear)
                     }
@@ -71,6 +76,13 @@ struct ContentView: View {
                                 LabeledContent("Local", value: local)
                             }
                             LabeledContent("Livros", value: "\(store.livros.count)")
+                            if let quando = store.ultimaRecarga {
+                                LabeledContent("Recarregado") {
+                                    Label(quando.formatted(date: .omitted, time: .shortened),
+                                          systemImage: "arrow.clockwise.circle.fill")
+                                        .foregroundStyle(Color.bibAccent)
+                                }
+                            }
                             if let quando = store.ultimaGravacao {
                                 LabeledContent("Salvo") {
                                     Label(quando.formatted(date: .omitted, time: .shortened),
@@ -125,6 +137,7 @@ struct ContentView: View {
 
 private struct HomeHeader: View {
     let livrosCount: Int
+    let versionText: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -140,6 +153,10 @@ private struct HomeHeader: View {
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(.white)
                 .padding(.top, 6)
+
+            Text(versionText)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.75))
         }
         .padding(.horizontal, 20)
         .padding(.top, 22)

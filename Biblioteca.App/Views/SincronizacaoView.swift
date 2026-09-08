@@ -4,6 +4,8 @@ import UniformTypeIdentifiers
 struct SincronizacaoView: View {
     @EnvironmentObject var store: BibliotecaStore
     @State private var mostrarSeletor = false
+    @State private var feedbackGravar: String? = nil
+    @State private var feedbackSucesso = false
 
     private var noICloud: Bool {
         guard let url = store.arquivoURL else { return false }
@@ -16,6 +18,20 @@ struct SincronizacaoView: View {
                 if let arquivoURL = store.arquivoURL {
                     LabeledContent("Selecionado", value: arquivoURL.lastPathComponent)
                     LabeledContent("Livros carregados", value: "\(store.livros.count)")
+                    if let quando = store.ultimaRecarga {
+                        LabeledContent("Recarregado") {
+                            Label(quando.formatted(date: .omitted, time: .shortened),
+                                  systemImage: "arrow.clockwise.circle.fill")
+                                .foregroundStyle(Color.bibAccent)
+                        }
+                    }
+                    if let quando = store.ultimaGravacao {
+                        LabeledContent("Salvo") {
+                            Label(quando.formatted(date: .omitted, time: .shortened),
+                                  systemImage: "checkmark.circle.fill")
+                                .foregroundStyle(Color.bibAccent)
+                        }
+                    }
                     LabeledContent("iCloud Drive") {
                         Label(noICloud ? "Sim" : "Não",
                               systemImage: noICloud ? "checkmark.icloud.fill" : "icloud.slash")
@@ -37,9 +53,35 @@ struct SincronizacaoView: View {
                 Button {
                     store.recarregarArquivo()
                 } label: {
-                    Label("Recarregar arquivo", systemImage: "arrow.clockwise")
+                    Label("Recarregar do iCloud", systemImage: "arrow.clockwise")
                 }
                 .disabled(store.arquivoURL == nil)
+
+                Button {
+                    store.erroMensagem = nil
+                    store.salvar()
+                    FotoStore.shared.publicarNoICloud()
+                    if let erro = store.erroMensagem {
+                        feedbackGravar = erro
+                        feedbackSucesso = false
+                    } else {
+                        feedbackGravar = "Arquivo gravado com sucesso no iCloud."
+                        feedbackSucesso = true
+                        Task {
+                            try? await Task.sleep(for: .seconds(3))
+                            feedbackGravar = nil
+                        }
+                    }
+                } label: {
+                    Label("Gravar no iCloud", systemImage: "icloud.and.arrow.up")
+                }
+                .disabled(store.arquivoURL == nil)
+
+                if let texto = feedbackGravar {
+                    Label(texto, systemImage: feedbackSucesso ? "checkmark.icloud.fill" : "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(feedbackSucesso ? Color.bibAccent : Color.bibDanger)
+                }
             }
 
             Section {
@@ -47,12 +89,12 @@ struct SincronizacaoView: View {
                       systemImage: "1.circle.fill")
                 Label("Aqui no iPhone, toque em Selecionar e escolha esse mesmo arquivo no iCloud Drive.",
                       systemImage: "2.circle.fill")
-                Label("As alterações sincronizam automaticamente; o app recarrega ao ser reaberto.",
+                Label("Antes de editar aqui, toque em Recarregar do iCloud se você alterou a base no Mac.",
                       systemImage: "arrow.triangle.2.circlepath")
             } header: {
                 Text("Como sincronizar com o Mac")
             } footer: {
-                Text("Se editar no Mac e no iPhone ao mesmo tempo, vale a última gravação do arquivo.")
+                Text("Evite editar no Mac e no iPhone ao mesmo tempo. Como a base é um arquivo compartilhado, pode valer a última gravação.")
             }
         }
         .navigationTitle("Sincronização")
