@@ -59,7 +59,7 @@ final class FotoStore {
 
     /// Lê biblioteca.dat do iCloud e salva localmente as fotos ausentes.
     func sincronizarComDat() {
-        guard let datURL = iCloudDatURL, let arqURL = iCloudPastaURL else { return }
+        guard let datURL = iCloudDatURL else { return }
         let fm = FileManager.default
         guard fm.fileExists(atPath: datURL.path) else { return }
 
@@ -71,8 +71,6 @@ final class FotoStore {
 
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self else { return }
-            let started = arqURL.startAccessingSecurityScopedResource()
-            defer { if started { arqURL.stopAccessingSecurityScopedResource() } }
 
             var texto = ""
             var coordError: NSError?
@@ -104,7 +102,7 @@ final class FotoStore {
     }
 
     private func escreverDat() {
-        guard let datURL = iCloudDatURL, let arqURL = iCloudPastaURL else { return }
+        guard let datURL = iCloudDatURL else { return }
 
         DispatchQueue.global(qos: .background).async {
             // Monta dicionário { fotoId: "data:image/jpeg;base64,..." }
@@ -121,11 +119,8 @@ final class FotoStore {
                   let jsonStr = String(data: jsonData, encoding: .utf8)
             else { return }
 
-            // O security scope de biblioteca.txt é necessário para que o
-            // NSFileCoordinator consiga gravar um arquivo novo na mesma pasta.
-            let started = arqURL.startAccessingSecurityScopedResource()
-            defer { if started { arqURL.stopAccessingSecurityScopedResource() } }
-
+            // Scope da pasta mantido ativo pelo BibliotecaStore — não precisa
+            // de start/stop aqui.
             var coordError: NSError?
             NSFileCoordinator().coordinate(
                 writingItemAt: datURL, options: .forReplacing, error: &coordError

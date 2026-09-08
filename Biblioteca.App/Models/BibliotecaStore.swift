@@ -44,17 +44,21 @@ class BibliotecaStore: ObservableObject {
         restaurarArquivo()
     }
 
+    deinit {
+        pastaURL?.stopAccessingSecurityScopedResource()
+    }
+
     // MARK: - Vínculo com pasta
 
     /// Recebe a URL da PASTA selecionada pelo fileImporter.
     func vincularPasta(_ pasta: URL) {
         guard pasta.startAccessingSecurityScopedResource() else { return }
-        defer { pasta.stopAccessingSecurityScopedResource() }
         do {
             let bookmark = try pasta.bookmarkData(options: .minimalBookmark,
                                                   includingResourceValuesForKeys: nil,
                                                   relativeTo: nil)
             UserDefaults.standard.set(bookmark, forKey: Self.bookmarkKey)
+            pastaURL?.stopAccessingSecurityScopedResource()
             pastaURL = pasta
             arquivoURL = pasta.appendingPathComponent("biblioteca.txt")
             configurarFotoStore(para: pasta)
@@ -62,6 +66,7 @@ class BibliotecaStore: ObservableObject {
                 carregarDoArquivo(url)
             }
         } catch {
+            pasta.stopAccessingSecurityScopedResource()
             erroMensagem = "Erro ao vincular pasta: \(error.localizedDescription)"
         }
     }
@@ -84,7 +89,7 @@ class BibliotecaStore: ObservableObject {
             arquivoURL = txt
             configurarFotoStore(para: pasta)
             carregarDoArquivo(txt)
-            pasta.stopAccessingSecurityScopedResource()
+            // Scope mantido ativo — liberado em deinit ou ao trocar de pasta.
         } catch {
             UserDefaults.standard.removeObject(forKey: Self.bookmarkKey)
         }
@@ -127,19 +132,12 @@ class BibliotecaStore: ObservableObject {
     }
 
     func recarregarArquivo() {
-        guard let pasta = pastaURL, let url = arquivoURL else { return }
-        guard pasta.startAccessingSecurityScopedResource() else {
-            erroMensagem = "Não foi possível acessar a pasta vinculada."
-            return
-        }
-        defer { pasta.stopAccessingSecurityScopedResource() }
+        guard pastaURL != nil, let url = arquivoURL else { return }
         carregarDoArquivo(url)
     }
 
     func salvar() {
-        guard let pasta = pastaURL, let url = arquivoURL else { return }
-        guard pasta.startAccessingSecurityScopedResource() else { return }
-        defer { pasta.stopAccessingSecurityScopedResource() }
+        guard pastaURL != nil, let url = arquivoURL else { return }
         let texto = serializar()
         var coordErro: NSError?
         var escreverErro: Error?
