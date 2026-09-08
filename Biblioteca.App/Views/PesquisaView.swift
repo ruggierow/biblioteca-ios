@@ -3,16 +3,24 @@ import SwiftUI
 struct PesquisaView: View {
     @EnvironmentObject var store: BibliotecaStore
     @State private var busca = ""
+    @State private var soComFoto = false
 
     private var livrosFiltrados: [Livro] {
-        guard !busca.isEmpty else { return store.livros }
-        let termo = normalizar(busca)
-        return store.livros.filter { correspondeBusca($0, termo: termo) }
+        var lista = store.livros
+        if !busca.isEmpty {
+            let termo = normalizar(busca)
+            lista = lista.filter { correspondeBusca($0, termo: termo) }
+        }
+        if soComFoto {
+            lista = lista.filter { FotoStore.shared.existe(livroId: $0.fotoId) }
+        }
+        return lista
     }
 
     private var contagemTexto: String {
         let n = livrosFiltrados.count
-        if busca.isEmpty {
+        let filtroAtivo = !busca.isEmpty || soComFoto
+        if !filtroAtivo {
             return n == 1 ? "1 livro" : "\(n) livros"
         } else {
             return n == 1 ? "1 livro encontrado" : "\(n) livros encontrados"
@@ -22,7 +30,7 @@ struct PesquisaView: View {
     var body: some View {
         List {
             if livrosFiltrados.isEmpty {
-                Text(busca.isEmpty ? "Nenhum livro cadastrado" : "Nenhum resultado")
+                Text(busca.isEmpty && !soComFoto ? "Nenhum livro cadastrado" : "Nenhum resultado")
                     .foregroundColor(.secondary)
             } else {
                 Section {
@@ -56,6 +64,16 @@ struct PesquisaView: View {
         .navigationTitle("Pesquisa")
         .tint(.bibPrimary)
         .searchable(text: $busca, prompt: "Buscar por título, autor, tema, ano ou status")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    soComFoto.toggle()
+                } label: {
+                    Label("Com foto", systemImage: soComFoto ? "photo.fill" : "photo")
+                        .foregroundStyle(soComFoto ? Color.bibAccent : Color.secondary)
+                }
+            }
+        }
     }
 
     private func correspondeBusca(_ livro: Livro, termo: String) -> Bool {

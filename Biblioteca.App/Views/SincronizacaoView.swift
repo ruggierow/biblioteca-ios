@@ -6,6 +6,8 @@ struct SincronizacaoView: View {
     @State private var mostrarSeletor = false
     @State private var feedbackGravar: String? = nil
     @State private var feedbackSucesso = false
+    @State private var feedbackRecarregar: String? = nil
+    @State private var feedbackRecarregarSucesso = false
 
     private var noICloud: Bool {
         guard let url = store.arquivoURL else { return false }
@@ -51,11 +53,29 @@ struct SincronizacaoView: View {
                 }
 
                 Button {
+                    store.erroMensagem = nil
                     store.recarregarArquivo()
+                    if let erro = store.erroMensagem {
+                        feedbackRecarregar = erro
+                        feedbackRecarregarSucesso = false
+                    } else {
+                        feedbackRecarregar = "Arquivo recarregado com sucesso."
+                        feedbackRecarregarSucesso = true
+                        Task {
+                            try? await Task.sleep(for: .seconds(3))
+                            feedbackRecarregar = nil
+                        }
+                    }
                 } label: {
                     Label("Recarregar do iCloud", systemImage: "arrow.clockwise")
                 }
                 .disabled(store.arquivoURL == nil)
+
+                if let texto = feedbackRecarregar {
+                    Label(texto, systemImage: feedbackRecarregarSucesso ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(feedbackRecarregarSucesso ? Color.bibAccent : Color.bibDanger)
+                }
 
                 Button {
                     store.erroMensagem = nil
