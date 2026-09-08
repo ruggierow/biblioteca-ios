@@ -35,7 +35,7 @@ struct PesquisaView: View {
             } else {
                 Section {
                     ForEach(livrosFiltrados) { livro in
-                        NavigationLink(destination: DetalheView(livro: livro)) {
+                        NavigationLink(destination: DetalheView(livroId: livro.id)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(livro.titulo)
                                     .font(.headline)

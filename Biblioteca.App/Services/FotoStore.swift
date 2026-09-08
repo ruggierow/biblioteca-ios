@@ -1,5 +1,10 @@
 import UIKit
 
+extension Notification.Name {
+    /// Postada na main queue sempre que novas fotos chegam do iCloud.
+    static let fotosSincronizadas = Notification.Name("FotoStore.fotosSincronizadas")
+}
+
 /// Gerencia fotos de capa, armazenadas como JPEG em Documents/capas/.
 /// Sincroniza com iCloud via biblioteca.dat (JSON: { fotoId: "data:image/jpeg;base64,..." })
 /// quando iCloudDatURL e iCloudArquivoURL estiverem definidos (pelo BibliotecaStore).
@@ -66,12 +71,15 @@ final class FotoStore {
         if (try? datURL.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]))?
             .ubiquitousItemDownloadingStatus == .some(.notDownloaded) {
             try? fm.startDownloadingUbiquitousItem(at: datURL)
+            // Tenta de novo após o download completar.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                self?.sincronizarComDat()
+            }
             return
         }
 
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self else { return }
-
             var texto = ""
             var coordError: NSError?
             NSFileCoordinator().coordinate(readingItemAt: datURL, options: [], error: &coordError) { u in
@@ -82,12 +90,19 @@ final class FotoStore {
                     with: Data(texto.utf8)) as? [String: String]
             else { return }
 
+            var salvouAlguma = false
             for (fotoId, dataURI) in dict {
                 if self.existe(livroId: fotoId) { continue }
                 guard let commaIdx = dataURI.firstIndex(of: ",") else { continue }
                 let base64 = String(dataURI[dataURI.index(after: commaIdx)...])
                 guard let data = Data(base64Encoded: base64) else { continue }
                 try? data.write(to: self.urlPara(fotoId), options: .atomic)
+                salvouAlguma = true
+            }
+            if salvouAlguma {
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .fotosSincronizadas, object: nil)
+                }
             }
         }
     }
@@ -105,27 +120,38 @@ final class FotoStore {
         guard let datURL = iCloudDatURL else { return }
 
         DispatchQueue.global(qos: .background).async {
-            // Monta dicionário { fotoId: "data:image/jpeg;base64,..." }
-            var dict: [String: String] = [:]
+            // Monta dicionário das fotos locais.
+            var dictLocal: [String: String] = [:]
             let fm = FileManager.default
-            guard let arquivos = try? fm.contentsOfDirectory(
-                at: self.dir, includingPropertiesForKeys: nil) else { return }
-            for arquivo in arquivos where arquivo.pathExtension == "jpg" {
-                let fotoId = arquivo.deletingPathExtension().lastPathComponent
-                guard let data = try? Data(contentsOf: arquivo) else { continue }
-                dict[fotoId] = "data:image/jpeg;base64," + data.base64EncodedString()
+            if let arquivos = try? fm.contentsOfDirectory(at: self.dir, includingPropertiesForKeys: nil) {
+                for arquivo in arquivos where arquivo.pathExtension == "jpg" {
+                    let fotoId = arquivo.deletingPathExtension().lastPathComponent
+                    if let data = try? Data(contentsOf: arquivo) {
+                        dictLocal[fotoId] = "data:image/jpeg;base64," + data.base64EncodedString()
+                    }
+                }
             }
-            guard let jsonData = try? JSONSerialization.data(withJSONObject: dict),
-                  let jsonStr = String(data: jsonData, encoding: .utf8)
-            else { return }
 
-            // Scope da pasta mantido ativo pelo BibliotecaStore — não precisa
-            // de start/stop aqui.
+            // Lê o dat existente e faz merge: começa com o iCloud e sobrepõe as
+            // fotos locais. Evita apagar fotos gravadas por outras plataformas (Mac).
             var coordError: NSError?
             NSFileCoordinator().coordinate(
-                writingItemAt: datURL, options: .forReplacing, error: &coordError
-            ) { u in
-                try? jsonStr.write(to: u, atomically: true, encoding: .utf8)
+                readingItemAt: datURL, options: [],
+                writingItemAt: datURL, options: .forReplacing,
+                error: &coordError
+            ) { readURL, writeURL in
+                var dictFinal: [String: String] = [:]
+                if fm.fileExists(atPath: readURL.path),
+                   let texto = try? String(contentsOf: readURL, encoding: .utf8),
+                   let existente = try? JSONSerialization.jsonObject(
+                       with: Data(texto.utf8)) as? [String: String] {
+                    dictFinal = existente
+                }
+                for (k, v) in dictLocal { dictFinal[k] = v }
+                if let jsonData = try? JSONSerialization.data(withJSONObject: dictFinal),
+                   let jsonStr = String(data: jsonData, encoding: .utf8) {
+                    try? jsonStr.write(to: writeURL, atomically: true, encoding: .utf8)
+                }
             }
         }
     }
