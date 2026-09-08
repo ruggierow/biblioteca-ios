@@ -47,7 +47,7 @@ struct SincronizacaoView: View {
                 Button {
                     mostrarSeletor = true
                 } label: {
-                    Label(store.arquivoURL == nil ? "Selecionar Biblioteca.txt" : "Trocar arquivo", systemImage: "doc.badge.plus")
+                    Label(store.arquivoURL == nil ? "Selecionar pasta Biblioteca" : "Trocar pasta", systemImage: "folder.badge.plus")
                 }
 
                 Button {
@@ -85,9 +85,9 @@ struct SincronizacaoView: View {
             }
 
             Section {
-                Label("No Mac, coloque o biblioteca.txt no iCloud Drive e aponte o app do Mac para ele.",
+                Label("No Mac, coloque o biblioteca.txt no iCloud Drive e abra o app do Mac.",
                       systemImage: "1.circle.fill")
-                Label("Aqui no iPhone, toque em Selecionar e escolha esse mesmo arquivo no iCloud Drive.",
+                Label("Aqui no iPhone, toque em Selecionar e escolha a pasta Biblioteca no iCloud Drive (não o arquivo).",
                       systemImage: "2.circle.fill")
                 Label("Antes de editar aqui, toque em Recarregar do iCloud se você alterou a base no Mac.",
                       systemImage: "arrow.triangle.2.circlepath")
@@ -101,11 +101,11 @@ struct SincronizacaoView: View {
         .tint(.bibPrimary)
         .fileImporter(
             isPresented: $mostrarSeletor,
-            allowedContentTypes: [.text],
+            allowedContentTypes: [.folder],
             allowsMultipleSelection: false
         ) { result in
             if case .success(let urls) = result, let url = urls.first {
-                store.vincularArquivo(url)
+                store.vincularPasta(url)
             }
         }
     }

@@ -11,9 +11,9 @@ final class FotoStore {
     /// URL do arquivo biblioteca.dat no iCloud (derivado de biblioteca.txt).
     var iCloudDatURL: URL? = nil
 
-    /// URL com security scope de biblioteca.txt — necessário para escrever
-    /// arquivos novos na mesma pasta via NSFileCoordinator.
-    var iCloudArquivoURL: URL? = nil
+    /// URL com security scope da PASTA do iCloud — cobre biblioteca.dat e outros
+    /// arquivos novos criados na mesma pasta.
+    var iCloudPastaURL: URL? = nil
 
     private var datWorkItem: DispatchWorkItem?
 
@@ -59,7 +59,7 @@ final class FotoStore {
 
     /// Lê biblioteca.dat do iCloud e salva localmente as fotos ausentes.
     func sincronizarComDat() {
-        guard let datURL = iCloudDatURL, let arqURL = iCloudArquivoURL else { return }
+        guard let datURL = iCloudDatURL, let arqURL = iCloudPastaURL else { return }
         let fm = FileManager.default
         guard fm.fileExists(atPath: datURL.path) else { return }
 
@@ -96,7 +96,7 @@ final class FotoStore {
 
     /// Agenda (com debounce de 1 s) a publicação de todas as fotos locais em biblioteca.dat.
     func publicarNoICloud() {
-        guard iCloudDatURL != nil, iCloudArquivoURL != nil else { return }
+        guard iCloudDatURL != nil, iCloudPastaURL != nil else { return }
         datWorkItem?.cancel()
         let item = DispatchWorkItem { [weak self] in self?.escreverDat() }
         datWorkItem = item
@@ -104,7 +104,7 @@ final class FotoStore {
     }
 
     private func escreverDat() {
-        guard let datURL = iCloudDatURL, let arqURL = iCloudArquivoURL else { return }
+        guard let datURL = iCloudDatURL, let arqURL = iCloudPastaURL else { return }
 
         DispatchQueue.global(qos: .background).async {
             // Monta dicionário { fotoId: "data:image/jpeg;base64,..." }

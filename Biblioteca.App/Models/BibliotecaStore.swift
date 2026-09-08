@@ -32,27 +32,37 @@ class BibliotecaStore: ObservableObject {
     }
 
     private static let SEP = ";"
-    private static let bookmarkKey = "bibliotecaFileBookmark"
+
+    // Bookmark agora guarda a PASTA (não o arquivo), para que o security scope
+    // cubra a pasta inteira e permita criar biblioteca.dat.
+    private static let bookmarkKey = "bibliotecaPastaBookmark"
+
+    // URL com security scope da pasta selecionada.
+    private var pastaURL: URL? = nil
 
     init() {
         restaurarArquivo()
     }
 
-    // MARK: - Vínculo com arquivo
+    // MARK: - Vínculo com pasta
 
-    func vincularArquivo(_ url: URL) {
-        guard url.startAccessingSecurityScopedResource() else { return }
-        defer { url.stopAccessingSecurityScopedResource() }
+    /// Recebe a URL da PASTA selecionada pelo fileImporter.
+    func vincularPasta(_ pasta: URL) {
+        guard pasta.startAccessingSecurityScopedResource() else { return }
+        defer { pasta.stopAccessingSecurityScopedResource() }
         do {
-            let bookmark = try url.bookmarkData(options: .minimalBookmark,
-                                                includingResourceValuesForKeys: nil,
-                                                relativeTo: nil)
+            let bookmark = try pasta.bookmarkData(options: .minimalBookmark,
+                                                  includingResourceValuesForKeys: nil,
+                                                  relativeTo: nil)
             UserDefaults.standard.set(bookmark, forKey: Self.bookmarkKey)
-            arquivoURL = url
-            configurarFotoStore(para: url)
-            carregarDoArquivo(url)
+            pastaURL = pasta
+            arquivoURL = pasta.appendingPathComponent("biblioteca.txt")
+            configurarFotoStore(para: pasta)
+            if let url = arquivoURL {
+                carregarDoArquivo(url)
+            }
         } catch {
-            erroMensagem = "Erro ao vincular arquivo: \(error.localizedDescription)"
+            erroMensagem = "Erro ao vincular pasta: \(error.localizedDescription)"
         }
     }
 
@@ -60,32 +70,32 @@ class BibliotecaStore: ObservableObject {
         guard let bookmark = UserDefaults.standard.data(forKey: Self.bookmarkKey) else { return }
         var isStale = false
         do {
-            let url = try URL(resolvingBookmarkData: bookmark,
-                              options: .withoutUI,
-                              relativeTo: nil,
-                              bookmarkDataIsStale: &isStale)
+            let pasta = try URL(resolvingBookmarkData: bookmark,
+                                options: .withoutUI,
+                                relativeTo: nil,
+                                bookmarkDataIsStale: &isStale)
             if isStale {
                 UserDefaults.standard.removeObject(forKey: Self.bookmarkKey)
                 return
             }
-            guard url.startAccessingSecurityScopedResource() else { return }
-            configurarFotoStore(para: url)
-            carregarDoArquivo(url)
-            url.stopAccessingSecurityScopedResource()
-            arquivoURL = url
+            guard pasta.startAccessingSecurityScopedResource() else { return }
+            pastaURL = pasta
+            let txt = pasta.appendingPathComponent("biblioteca.txt")
+            arquivoURL = txt
+            configurarFotoStore(para: pasta)
+            carregarDoArquivo(txt)
+            pasta.stopAccessingSecurityScopedResource()
         } catch {
             UserDefaults.standard.removeObject(forKey: Self.bookmarkKey)
         }
     }
 
-    private func configurarFotoStore(para url: URL) {
-        let datURL = url.deletingLastPathComponent().appendingPathComponent("biblioteca.dat")
+    private func configurarFotoStore(para pasta: URL) {
+        let datURL = pasta.appendingPathComponent("biblioteca.dat")
         FotoStore.shared.iCloudDatURL = datURL
-        // URL com security scope para que FotoStore possa escrever na pasta via NSFileCoordinator
-        FotoStore.shared.iCloudArquivoURL = url
-        // Traz fotos novas do iCloud para o aparelho
+        // Escopo de segurança da PASTA: permite criar arquivos novos (biblioteca.dat).
+        FotoStore.shared.iCloudPastaURL = pasta
         FotoStore.shared.sincronizarComDat()
-        // Publica todas as fotos locais no iCloud (cria biblioteca.dat se ainda não existe)
         FotoStore.shared.publicarNoICloud()
     }
 
@@ -117,19 +127,19 @@ class BibliotecaStore: ObservableObject {
     }
 
     func recarregarArquivo() {
-        guard let url = arquivoURL else { return }
-        guard url.startAccessingSecurityScopedResource() else {
-            erroMensagem = "Não foi possível acessar o arquivo vinculado."
+        guard let pasta = pastaURL, let url = arquivoURL else { return }
+        guard pasta.startAccessingSecurityScopedResource() else {
+            erroMensagem = "Não foi possível acessar a pasta vinculada."
             return
         }
-        defer { url.stopAccessingSecurityScopedResource() }
+        defer { pasta.stopAccessingSecurityScopedResource() }
         carregarDoArquivo(url)
     }
 
     func salvar() {
-        guard let url = arquivoURL else { return }
-        guard url.startAccessingSecurityScopedResource() else { return }
-        defer { url.stopAccessingSecurityScopedResource() }
+        guard let pasta = pastaURL, let url = arquivoURL else { return }
+        guard pasta.startAccessingSecurityScopedResource() else { return }
+        defer { pasta.stopAccessingSecurityScopedResource() }
         let texto = serializar()
         var coordErro: NSError?
         var escreverErro: Error?
