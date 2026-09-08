@@ -3,10 +3,15 @@ import Foundation
 
 struct DetalheView: View {
     @EnvironmentObject var store: BibliotecaStore
-    var livro: Livro
+    let livroId: UUID
 
     @State private var mostrarEdicao = false
     @State private var capa: UIImage? = nil
+
+    // Sempre lê o livro atualizado do store — reflete edições sem sair da tela.
+    private var livro: Livro {
+        store.livros.first { $0.id == livroId } ?? Livro()
+    }
 
     var body: some View {
         List {
@@ -81,6 +86,9 @@ struct DetalheView: View {
             CadastroView(livroEditando: livro)
         }
         .onAppear {
+            capa = FotoStore.shared.carregar(livroId: livro.fotoId)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .fotosSincronizadas)) { _ in
             capa = FotoStore.shared.carregar(livroId: livro.fotoId)
         }
     }

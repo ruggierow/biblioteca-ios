@@ -55,11 +55,12 @@ struct SincronizacaoView: View {
                 Button {
                     store.erroMensagem = nil
                     store.recarregarArquivo()
+                    FotoStore.shared.sincronizarComDat()
                     if let erro = store.erroMensagem {
                         feedbackRecarregar = erro
                         feedbackRecarregarSucesso = false
                     } else {
-                        feedbackRecarregar = "Arquivo recarregado com sucesso."
+                        feedbackRecarregar = "Arquivo e fotos recarregados do iCloud."
                         feedbackRecarregarSucesso = true
                         Task {
                             try? await Task.sleep(for: .seconds(3))
@@ -80,16 +81,24 @@ struct SincronizacaoView: View {
                 Button {
                     store.erroMensagem = nil
                     store.salvar()
-                    FotoStore.shared.publicarNoICloud()
+                    feedbackGravar = "Gravando fotos no iCloud…"
+                    feedbackSucesso = true
                     if let erro = store.erroMensagem {
                         feedbackGravar = erro
                         feedbackSucesso = false
                     } else {
-                        feedbackGravar = "Arquivo gravado com sucesso no iCloud."
-                        feedbackSucesso = true
-                        Task {
-                            try? await Task.sleep(for: .seconds(3))
-                            feedbackGravar = nil
+                        FotoStore.shared.publicarNoICloud { erroDat in
+                            if let erroDat {
+                                feedbackGravar = erroDat
+                                feedbackSucesso = false
+                            } else {
+                                feedbackGravar = "Texto e fotos gravados no iCloud."
+                                feedbackSucesso = true
+                                Task {
+                                    try? await Task.sleep(for: .seconds(4))
+                                    feedbackGravar = nil
+                                }
+                            }
                         }
                     }
                 } label: {
