@@ -118,11 +118,26 @@ final class FotoStore {
 
     private func escreverDat() {
         guard let datURL = iCloudDatURL else { return }
+        let fm = FileManager.default
+
+        // Se o dat existe mas ainda não foi baixado do iCloud, aguarda o download
+        // antes de tentar o merge. Sem isso, a leitura falha e sobrescreve com
+        // menos fotos do que havia antes.
+        if fm.fileExists(atPath: datURL.path) {
+            let status = (try? datURL.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]))?
+                .ubiquitousItemDownloadingStatus
+            if status == .notDownloaded {
+                try? fm.startDownloadingUbiquitousItem(at: datURL)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+                    self?.escreverDat()
+                }
+                return
+            }
+        }
 
         DispatchQueue.global(qos: .background).async {
             // Monta dicionário das fotos locais.
             var dictLocal: [String: String] = [:]
-            let fm = FileManager.default
             if let arquivos = try? fm.contentsOfDirectory(at: self.dir, includingPropertiesForKeys: nil) {
                 for arquivo in arquivos where arquivo.pathExtension == "jpg" {
                     let fotoId = arquivo.deletingPathExtension().lastPathComponent
@@ -132,8 +147,8 @@ final class FotoStore {
                 }
             }
 
-            // Lê o dat existente e faz merge: começa com o iCloud e sobrepõe as
-            // fotos locais. Evita apagar fotos gravadas por outras plataformas (Mac).
+            // Merge: começa com o dat existente e sobrepõe as fotos locais.
+            // Se a leitura do dat falhar, ABORTA — nunca sobrescreve com menos fotos.
             var coordError: NSError?
             NSFileCoordinator().coordinate(
                 readingItemAt: datURL, options: [],
@@ -141,10 +156,11 @@ final class FotoStore {
                 error: &coordError
             ) { readURL, writeURL in
                 var dictFinal: [String: String] = [:]
-                if fm.fileExists(atPath: readURL.path),
-                   let texto = try? String(contentsOf: readURL, encoding: .utf8),
-                   let existente = try? JSONSerialization.jsonObject(
-                       with: Data(texto.utf8)) as? [String: String] {
+                if fm.fileExists(atPath: readURL.path) {
+                    guard let texto = try? String(contentsOf: readURL, encoding: .utf8),
+                          let existente = try? JSONSerialization.jsonObject(
+                              with: Data(texto.utf8)) as? [String: String]
+                    else { return } // leitura falhou — aborta, não sobrescreve
                     dictFinal = existente
                 }
                 for (k, v) in dictLocal { dictFinal[k] = v }
