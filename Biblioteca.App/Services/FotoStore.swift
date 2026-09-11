@@ -29,6 +29,8 @@ final class FotoStore {
     }
 
     func salvar(_ imagem: UIImage, livroId: String) {
+        // Refotografou uma capa que havia apagado: a exclusão está superada.
+        RegistroExclusoes.esquecer([livroId], naPasta: iCloudPastaURL)
         guard !livroId.isEmpty, let data = imagem.jpegData(compressionQuality: 0.82) else { return }
         try? data.write(to: urlPara(livroId), options: .atomic)
         publicarNoICloud()
@@ -43,6 +45,9 @@ final class FotoStore {
     func remover(livroId: String) {
         guard !livroId.isEmpty else { return }
         try? FileManager.default.removeItem(at: urlPara(livroId))
+        // Sem registrar, esta exclusão voltaria atrás na próxima sincronização
+        // de qualquer aparelho que ainda tivesse a foto.
+        RegistroExclusoes.registrar([livroId], naPasta: iCloudPastaURL)
         publicarNoICloud()
     }
 
@@ -148,11 +153,32 @@ final class FotoStore {
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self else { return }
 
+            // Capas apagadas em qualquer aparelho. Sem esta consulta, o merge
+            // abaixo ressuscitaria no .dat tudo que ainda existe aqui.
+            let removidas = RegistroExclusoes.ler(naPasta: self.iCloudPastaURL)
+
             // Monta dicionário das fotos locais.
             var dictLocal: [String: String] = [:]
             if let arquivos = try? fm.contentsOfDirectory(at: self.dir, includingPropertiesForKeys: nil) {
                 for arquivo in arquivos where arquivo.pathExtension == "jpg" {
                     let fotoId = arquivo.deletingPathExtension().lastPathComponent
+
+                    let modificada = (try? arquivo.resourceValues(forKeys: [.contentModificationDateKey]))?
+                        .contentModificationDate ?? .distantPast
+                    switch RegistroExclusoes.destino(fotoId: fotoId,
+                                                     modificadaEm: modificada,
+                                                     registro: removidas) {
+                    case .apagar:
+                        // Apaga também aqui: senão continuaria aparecendo no
+                        // aparelho, fora do .dat.
+                        try? fm.removeItem(at: arquivo)
+                        continue
+                    case .exclusaoSuperada:
+                        RegistroExclusoes.esquecer([fotoId], naPasta: self.iCloudPastaURL)
+                    case .manter:
+                        break
+                    }
+
                     if let data = try? Data(contentsOf: arquivo) {
                         dictLocal[fotoId] = "data:image/jpeg;base64," + data.base64EncodedString()
                     }
