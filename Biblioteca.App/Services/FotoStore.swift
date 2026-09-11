@@ -121,6 +121,11 @@ final class FotoStore {
     }
 
     private func escreverDat(completion: ((String?) -> Void)? = nil) {
+        if let url = iCloudDatURL {
+            // Antes da primeira gravação da sessão. O .dat é reescrito em
+            // situações que não mudam nada, por isso o backup compara conteúdo.
+            BackupAutomatico.executar(para: url, maximo: BackupAutomatico.maximoDat)
+        }
         guard let datURL = iCloudDatURL else {
             DispatchQueue.main.async { completion?("URL do dat não definida.") }
             return

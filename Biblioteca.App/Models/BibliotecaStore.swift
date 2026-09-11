@@ -138,6 +138,8 @@ class BibliotecaStore: ObservableObject {
 
     func salvar() {
         guard pastaURL != nil, let url = arquivoURL else { return }
+        // Preserva o último estado bom antes da primeira gravação da sessão.
+        BackupAutomatico.executar(para: url, maximo: BackupAutomatico.maximoTxt)
         let texto = serializar()
         var coordErro: NSError?
         var escreverErro: Error?
