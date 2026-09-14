@@ -63,6 +63,35 @@ struct GruposTests {
         #expect(!l.grupoLiteratura)
     }
 
+    /// O payload deste teste foi COPIADO da saida real de `publicarGrupos()`
+    /// em motor-web/biblioteca.html. Se o Mac mudar o formato e este teste
+    /// continuar passando, e porque alguem mudou os dois — que e o certo.
+    @Test("le o grupos.json que o Mac grava")
+    func leGruposJson() throws {
+        let pasta = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: pasta, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: pasta) }
+
+        let payload = #"{"versao":1,"grupos":[{"id":1,"nome":"Grupo de Literatura"},{"id":2,"nome":"Clube da Tarde"}]}"#
+        try payload.write(to: pasta.appendingPathComponent("grupos.json"),
+                          atomically: true, encoding: .utf8)
+
+        let store = GruposStore()
+        store.carregar(de: pasta)
+        #expect(store.nome(1) == "Grupo de Literatura")
+        #expect(store.nome(2) == "Clube da Tarde")
+        #expect(store.nome(9) == "Grupo 9")
+    }
+
+    @Test("pasta sem grupos.json mantem o padrao, sem estourar")
+    func semGruposJson() {
+        let store = GruposStore()
+        store.carregar(de: URL(fileURLWithPath: "/caminho/que/nao/existe"))
+        store.carregar(de: nil)
+        #expect(store.nome(1) == "Grupo de Literatura")
+    }
+
     @Test("grupo sem nome conhecido vira \"Grupo N\"")
     func nomeDesconhecido() {
         #expect(GruposStore.shared.nome(97) == "Grupo 97")
