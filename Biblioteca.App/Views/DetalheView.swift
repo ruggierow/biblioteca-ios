@@ -60,7 +60,10 @@ struct DetalheView: View {
 
             Section("Status") {
                 LabeledContent("Emprestado", value: livro.emprestado ? "Sim" : "Não")
-                LabeledContent("Grupo de literatura", value: livro.grupoLiteratura ? "Sim" : "Não")
+                LabeledContent("Grupo de literatura",
+                               value: livro.listaGrupos.isEmpty
+                                    ? "Não"
+                                    : livro.listaGrupos.map(GruposStore.shared.nome).joined(separator: ", "))
             }
 
             if !livro.comentarios.isEmpty {

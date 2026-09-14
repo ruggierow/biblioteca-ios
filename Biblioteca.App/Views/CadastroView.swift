@@ -14,7 +14,9 @@ struct CadastroView: View {
     @State private var comentarios = ""
     @State private var local = ""
     @State private var emprestado = false
-    @State private var grupoLiteratura = false
+    @State private var gruposSelecionados: Set<Int> = []
+
+    @ObservedObject private var gruposStore = GruposStore.shared
 
     @State private var isbn = ""
     @State private var isbnStatus = ""
@@ -192,9 +194,22 @@ struct CadastroView: View {
                 // ── Extras ────────────────────────────────────
                 Section("Extras") {
                     Toggle("Emprestado", isOn: $emprestado)
-                    Toggle("Grupo de literatura", isOn: $grupoLiteratura)
                     TextField("Comentários", text: $comentarios, axis: .vertical)
                         .lineLimit(3...6)
+                }
+
+                // Um livro pode estar em mais de um grupo — e assim que o Mac
+                // e o Windows guardam, na coluna 8 ("1;3").
+                Section("Grupos de literatura") {
+                    ForEach(gruposStore.oferecidos(nosLivros: store.livros)) { g in
+                        Toggle(g.nome, isOn: Binding(
+                            get: { gruposSelecionados.contains(g.id) },
+                            set: { ligado in
+                                if ligado { gruposSelecionados.insert(g.id) }
+                                else { gruposSelecionados.remove(g.id) }
+                            }
+                        ))
+                    }
                 }
             }
             .navigationTitle(editando ? "Editar livro" : "Novo livro")
@@ -243,7 +258,7 @@ struct CadastroView: View {
         comentarios    = l.comentarios
         local          = l.local
         emprestado     = l.emprestado
-        grupoLiteratura = l.grupoLiteratura
+        gruposSelecionados = Set(l.listaGrupos)
         fotoExistente  = FotoStore.shared.carregar(livroId: l.fotoId)
     }
 
@@ -299,7 +314,7 @@ struct CadastroView: View {
         l.comentarios    = comentarios
         l.local          = local.trimmingCharacters(in: .whitespaces)
         l.emprestado     = emprestado
-        l.grupoLiteratura = grupoLiteratura
+        l.listaGrupos    = gruposSelecionados.sorted()
 
         let idNovo = l.fotoId
 

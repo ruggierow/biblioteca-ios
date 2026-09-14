@@ -62,6 +62,7 @@ class BibliotecaStore: ObservableObject {
             pastaURL = pasta
             arquivoURL = pasta.appendingPathComponent("biblioteca.txt")
             configurarFotoStore(para: pasta)
+            GruposStore.shared.carregar(de: pasta)
             if let url = arquivoURL {
                 carregarDoArquivo(url)
             }
@@ -88,6 +89,7 @@ class BibliotecaStore: ObservableObject {
             let txt = pasta.appendingPathComponent("biblioteca.txt")
             arquivoURL = txt
             configurarFotoStore(para: pasta)
+            GruposStore.shared.carregar(de: pasta)
             carregarDoArquivo(txt)
             // Scope mantido ativo — liberado em deinit ou ao trocar de pasta.
         } catch {
@@ -132,7 +134,8 @@ class BibliotecaStore: ObservableObject {
     }
 
     func recarregarArquivo() {
-        guard pastaURL != nil, let url = arquivoURL else { return }
+        guard let pasta = pastaURL, let url = arquivoURL else { return }
+        GruposStore.shared.carregar(de: pasta)
         carregarDoArquivo(url)
     }
 

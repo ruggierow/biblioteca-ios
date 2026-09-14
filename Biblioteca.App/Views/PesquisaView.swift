@@ -2,42 +2,53 @@ import SwiftUI
 
 struct PesquisaView: View {
     @EnvironmentObject var store: BibliotecaStore
-    @State private var busca = ""
-    @State private var soComFoto = false
-    @State private var soDoGrupo = false
+    @ObservedObject private var gruposStore = GruposStore.shared
+
+    @State private var filtro = FiltroPesquisa()
+    @State private var mostrandoFiltros = false
 
     private var livrosFiltrados: [Livro] {
-        var lista = store.livros
-        if !busca.isEmpty {
-            let termo = normalizar(busca)
+        var lista = store.livros.filter { filtro.aceita($0) }
+        let termo = normalizar(filtro.texto)
+        if !termo.isEmpty {
             lista = lista.filter { correspondeBusca($0, termo: termo) }
         }
-        if soComFoto {
+        if filtro.comFoto {
             lista = lista.filter { FotoStore.shared.existe(livroId: $0.fotoId) }
-        }
-        if soDoGrupo {
-            lista = lista.filter { $0.grupoLiteratura }
         }
         return lista
     }
 
-    private var filtroAtivo: Bool {
-        !busca.isEmpty || soComFoto || soDoGrupo
-    }
-
     private var contagemTexto: String {
         let n = livrosFiltrados.count
-        if !filtroAtivo {
+        if !filtro.ativo {
             return n == 1 ? "1 livro" : "\(n) livros"
         } else {
             return n == 1 ? "1 livro encontrado" : "\(n) livros encontrados"
         }
     }
 
+    private var resumoDosFiltros: String {
+        filtro.resumo(nomeDoGrupo: gruposStore.nome)
+    }
+
     var body: some View {
         List {
+            if !resumoDosFiltros.isEmpty {
+                Section {
+                    HStack {
+                        Text(resumoDosFiltros)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Button("Limpar") { filtro.limpar() }
+                            .font(.footnote)
+                    }
+                }
+            }
+
             if livrosFiltrados.isEmpty {
-                Text(!filtroAtivo ? "Nenhum livro cadastrado" : "Nenhum resultado")
+                Text(filtro.ativo ? "Nenhum resultado" : "Nenhum livro cadastrado")
                     .foregroundColor(.secondary)
             } else {
                 Section {
@@ -70,57 +81,36 @@ struct PesquisaView: View {
         }
         .navigationTitle("Pesquisa")
         .tint(.bibPrimary)
-        .searchable(text: $busca, prompt: "Buscar por título, autor, tema, ano, status ou grupo")
+        .searchable(text: $filtro.texto,
+                    prompt: "Buscar por título, autor, tema, local ou ano")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    soDoGrupo.toggle()
+                    mostrandoFiltros = true
                 } label: {
-                    Label("Grupo de literatura",
-                          systemImage: soDoGrupo ? "books.vertical.fill" : "books.vertical")
-                        .foregroundStyle(soDoGrupo ? Color.bibAccent : Color.secondary)
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    soComFoto.toggle()
-                } label: {
-                    Label("Com foto", systemImage: soComFoto ? "photo.fill" : "photo")
-                        .foregroundStyle(soComFoto ? Color.bibAccent : Color.secondary)
+                    Label("Filtros", systemImage: filtro.quantosLigados > 0
+                          ? "line.3.horizontal.decrease.circle.fill"
+                          : "line.3.horizontal.decrease.circle")
+                        .foregroundStyle(filtro.quantosLigados > 0
+                                         ? Color.bibAccent : Color.secondary)
                 }
             }
         }
+        .sheet(isPresented: $mostrandoFiltros) {
+            FiltrosView(filtro: $filtro,
+                        grupos: gruposStore.oferecidos(nosLivros: store.livros))
+        }
     }
 
+    /// A caixa unica procura nos mesmos campos que as quatro caixas do Mac
+    /// (titulo, autor, tema, local) mais o ano. Status e grupo saem daqui:
+    /// eles tem seletor proprio na folha de filtros.
     private func correspondeBusca(_ livro: Livro, termo: String) -> Bool {
         contem(livro.titulo, termo)
         || livro.autores.contains { contem($0, termo) }
         || livro.temas.contains { contem($0, termo) }
         || contem(livro.local, termo)
         || contem(livro.ano, termo)
-        || correspondeEmprestado(livro, termo: termo)
-        || correspondeGrupoLiteratura(livro, termo: termo)
-    }
-
-    private func correspondeEmprestado(_ livro: Livro, termo: String) -> Bool {
-        if livro.emprestado {
-            return contemAlgum(["emprestado", "emprestada", "emprestimo"], termo: termo)
-        }
-        return contemAlgum(["nao emprestado", "nao emprestada", "disponivel"], termo: termo)
-    }
-
-    private func correspondeGrupoLiteratura(_ livro: Livro, termo: String) -> Bool {
-        if livro.grupoLiteratura {
-            return contemAlgum(["grupo", "literatura", "grupo de literatura"], termo: termo)
-        }
-        return contemAlgum(["nao grupo", "fora do grupo", "sem grupo"], termo: termo)
-    }
-
-    private func contemAlgum(_ opcoes: [String], termo: String) -> Bool {
-        opcoes.contains { opcao in
-            let texto = normalizar(opcao)
-            return texto.contains(termo) || termo.contains(texto)
-        }
     }
 
     private func contem(_ texto: String, _ termo: String) -> Bool {
@@ -128,7 +118,8 @@ struct PesquisaView: View {
     }
 
     private func normalizar(_ texto: String) -> String {
-        texto.lowercased()
+        texto.trimmingCharacters(in: .whitespaces)
+             .lowercased()
              .folding(options: .diacriticInsensitive, locale: .current)
     }
 }

@@ -27,10 +27,24 @@ struct Livro: Identifiable {
         }
     }
 
-    static func participaDeGrupo(_ bruto: String) -> Bool {
-        bruto.split(separator: ";").contains { parte in
-            (Int(parte.trimmingCharacters(in: .whitespaces)) ?? 0) > 0
+    /// Os identificadores de grupo, na ordem em que estao no arquivo.
+    var listaGrupos: [Int] {
+        get { Livro.lerGrupos(grupos) }
+        set {
+            grupos = newValue.isEmpty
+                ? "0"
+                : newValue.map(String.init).joined(separator: ";")
         }
+    }
+
+    static func lerGrupos(_ bruto: String) -> [Int] {
+        bruto.split(separator: ";")
+            .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+            .filter { $0 > 0 }
+    }
+
+    static func participaDeGrupo(_ bruto: String) -> Bool {
+        !lerGrupos(bruto).isEmpty
     }
 
     /// Chave determinística derivada de título + autores.
