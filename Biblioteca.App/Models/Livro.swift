@@ -9,7 +9,29 @@ struct Livro: Identifiable {
     var emprestado: Bool = false
     var comentarios: String = ""
     var local: String = ""
-    var grupoLiteratura: Bool = false
+    /// Coluna 8 do arquivo, guardada exatamente como veio.
+    ///
+    /// A interface web escreve ali uma lista de grupos separada por ponto e
+    /// vírgula ("1;3"); o celular só distingue participar de não participar.
+    /// Guardar o texto original impede que uma gravação feita aqui apague a
+    /// participação em grupos que este motor ainda não sabe representar.
+    var grupos: String = "0"
+
+    /// Liga ou desliga a participação preservando a lista quando ela já
+    /// existe: um livro em "1;3" que continua no grupo permanece "1;3".
+    var grupoLiteratura: Bool {
+        get { Livro.participaDeGrupo(grupos) }
+        set {
+            guard newValue != Livro.participaDeGrupo(grupos) else { return }
+            grupos = newValue ? "1" : "0"
+        }
+    }
+
+    static func participaDeGrupo(_ bruto: String) -> Bool {
+        bruto.split(separator: ";").contains { parte in
+            (Int(parte.trimmingCharacters(in: .whitespaces)) ?? 0) > 0
+        }
+    }
 
     /// Chave determinística derivada de título + autores.
     /// Usa o mesmo hash FNV-1a da interface web, garantindo que o mesmo livro

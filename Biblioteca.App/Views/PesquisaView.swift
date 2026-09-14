@@ -4,6 +4,7 @@ struct PesquisaView: View {
     @EnvironmentObject var store: BibliotecaStore
     @State private var busca = ""
     @State private var soComFoto = false
+    @State private var soDoGrupo = false
 
     private var livrosFiltrados: [Livro] {
         var lista = store.livros
@@ -14,12 +15,18 @@ struct PesquisaView: View {
         if soComFoto {
             lista = lista.filter { FotoStore.shared.existe(livroId: $0.fotoId) }
         }
+        if soDoGrupo {
+            lista = lista.filter { $0.grupoLiteratura }
+        }
         return lista
+    }
+
+    private var filtroAtivo: Bool {
+        !busca.isEmpty || soComFoto || soDoGrupo
     }
 
     private var contagemTexto: String {
         let n = livrosFiltrados.count
-        let filtroAtivo = !busca.isEmpty || soComFoto
         if !filtroAtivo {
             return n == 1 ? "1 livro" : "\(n) livros"
         } else {
@@ -30,7 +37,7 @@ struct PesquisaView: View {
     var body: some View {
         List {
             if livrosFiltrados.isEmpty {
-                Text(busca.isEmpty && !soComFoto ? "Nenhum livro cadastrado" : "Nenhum resultado")
+                Text(!filtroAtivo ? "Nenhum livro cadastrado" : "Nenhum resultado")
                     .foregroundColor(.secondary)
             } else {
                 Section {
@@ -63,8 +70,17 @@ struct PesquisaView: View {
         }
         .navigationTitle("Pesquisa")
         .tint(.bibPrimary)
-        .searchable(text: $busca, prompt: "Buscar por título, autor, tema, ano ou status")
+        .searchable(text: $busca, prompt: "Buscar por título, autor, tema, ano, status ou grupo")
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    soDoGrupo.toggle()
+                } label: {
+                    Label("Grupo de literatura",
+                          systemImage: soDoGrupo ? "books.vertical.fill" : "books.vertical")
+                        .foregroundStyle(soDoGrupo ? Color.bibAccent : Color.secondary)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     soComFoto.toggle()

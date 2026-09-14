@@ -193,7 +193,7 @@ class BibliotecaStore: ObservableObject {
                 l.emprestado     = c.count > 4 && c[4] == "1"
                 l.comentarios    = c.count > 5 ? c[5] : ""
                 l.local          = c.count > 6 ? c[6] : ""
-                l.grupoLiteratura = c.count > 7 && c[7].trimmingCharacters(in: .whitespacesAndNewlines) == "1"
+                l.grupos = c.count > 7 ? c[7].trimmingCharacters(in: .whitespacesAndNewlines) : "0"
                 return l
             }
     }
@@ -214,7 +214,7 @@ class BibliotecaStore: ObservableObject {
                 l.emprestado ? "1" : "0",
                 l.comentarios,
                 l.local,
-                l.grupoLiteratura ? "1" : "0"
+                l.grupos
             ].joined(separator: "\t")
         }.joined(separator: "\n")
     }
