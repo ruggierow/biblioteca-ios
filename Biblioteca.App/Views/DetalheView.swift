@@ -122,7 +122,7 @@ private struct ComentariosComLinksView: View {
             }
 
             let urlNormalizada = normalizarURL(url)
-            attributed[lower..<upper].link = kindleURL(para: urlNormalizada) ?? urlNormalizada
+            attributed[lower..<upper].link = urlNormalizada
             attributed[lower..<upper].foregroundColor = .bibPrimary
             attributed[lower..<upper].underlineStyle = .single
         }
@@ -136,36 +136,6 @@ private struct ComentariosComLinksView: View {
         return url
     }
 
-    private func kindleURL(para url: URL) -> URL? {
-        guard let asin = asinExtraido(de: url) else { return nil }
-        return URL(string: "kindle://book?action=open&asin=\(asin)")
-    }
-
-    private func asinExtraido(de url: URL) -> String? {
-        if let asin = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-            .queryItems?
-            .first(where: { ["asin", "ASIN"].contains($0.name) })?
-            .value {
-            return asinLimpo(asin)
-        }
-
-        let componentes = url.pathComponents
-        for marcador in ["dp", "gp", "product"] {
-            if let indice = componentes.firstIndex(of: marcador), componentes.indices.contains(indice + 1) {
-                if let asin = asinLimpo(componentes[indice + 1]) {
-                    return asin
-                }
-            }
-        }
-
-        return componentes.compactMap(asinLimpo).first
-    }
-
-    private func asinLimpo(_ valor: String) -> String? {
-        let filtrado = valor.uppercased().filter { $0.isLetter || $0.isNumber }
-        guard filtrado.count == 10 else { return nil }
-        return filtrado
-    }
 }
 
 // Placeholder exibido quando o livro não tem foto — usa o ícone do próprio app.
