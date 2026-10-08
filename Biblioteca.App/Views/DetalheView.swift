@@ -68,7 +68,7 @@ struct DetalheView: View {
 
             if !livro.comentarios.isEmpty {
                 Section("Comentários") {
-                    ComentariosComLinksView(texto: livro.comentarios)
+                    ComentariosComLinksView(texto: livro.comentarios, titulo: livro.titulo)
                 }
             }
         }
@@ -99,11 +99,38 @@ struct DetalheView: View {
 
 private struct ComentariosComLinksView: View {
     let texto: String
+    let titulo: String
+
+    @State private var copiado = false
 
     var body: some View {
-        Text(textoComLinks)
-            .font(.body)
-            .textSelection(.enabled)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(textoComLinks)
+                .font(.body)
+                .textSelection(.enabled)
+            if copiado {
+                Text("Título copiado — cole na busca do Kindle.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .transition(.opacity)
+            }
+        }
+        // O aplicativo Kindle abre na BIBLIOTECA, nunca no livro: o esquema
+        // `kindle://` nao tem rota de busca. Entao, ao tocar nesse link, o
+        // titulo vai para a area de transferencia e basta colar na busca dele.
+        //
+        // So no link do Kindle: o do leitor da web abre o livro sozinho, e
+        // mexer na area de transferencia a toa apagaria o que o usuario copiou.
+        .environment(\.openURL, OpenURLAction { url in
+            if url.scheme?.lowercased() == "kindle" {
+                UIPasteboard.general.string = titulo
+                withAnimation { copiado = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                    withAnimation { copiado = false }
+                }
+            }
+            return .systemAction
+        })
     }
 
     private var textoComLinks: AttributedString {
