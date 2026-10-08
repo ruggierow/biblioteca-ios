@@ -133,27 +133,51 @@ private struct ComentariosComLinksView: View {
         })
     }
 
+    /// Monta o texto com os links mostrando o ROTULO, nao o endereco.
+    ///
+    /// Antes aparecia a URL inteira: funcionava, mas ocupava varias linhas e
+    /// no Android chegava a empurrar o resto da secao para fora da tela. Agora
+    /// as quatro plataformas mostram a mesma coisa — "Ler | Kindle" — e o
+    /// endereco so aparece na impressao, que e papel e nao se clica.
     private var textoComLinks: AttributedString {
-        var attributed = AttributedString(texto)
-        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
-            return attributed
+        guard let detector = try? NSDataDetector(
+            types: NSTextCheckingResult.CheckingType.link.rawValue) else {
+            return AttributedString(texto)
         }
 
+        var saida = AttributedString("")
+        var fim = texto.startIndex
         let nsRange = NSRange(texto.startIndex..<texto.endIndex, in: texto)
+
         for resultado in detector.matches(in: texto, options: [], range: nsRange) {
             guard let url = resultado.url,
-                  let range = Range(resultado.range, in: texto),
-                  let lower = AttributedString.Index(range.lowerBound, within: attributed),
-                  let upper = AttributedString.Index(range.upperBound, within: attributed) else {
-                continue
+                  let range = Range(resultado.range, in: texto) else { continue }
+
+            var antes = String(texto[fim..<range.lowerBound])
+            let achado = String(texto[range])
+            var nome: String
+
+            if let (prefixo, rotulo) = separarRotulo(antes) {
+                nome = rotulo
+                antes = prefixo
+            } else if achado.lowercased().hasPrefix("kindle:") {
+                nome = "app Kindle"
+            } else {
+                nome = url.host ?? achado
+                if nome.lowercased().hasPrefix("www.") { nome = String(nome.dropFirst(4)) }
             }
 
-            let urlNormalizada = normalizarURL(url)
-            attributed[lower..<upper].link = urlNormalizada
-            attributed[lower..<upper].foregroundColor = .bibPrimary
-            attributed[lower..<upper].underlineStyle = .single
+            saida.append(AttributedString(antes))
+            var link = AttributedString(nome)
+            link.link = normalizarURL(url)
+            link.foregroundColor = .bibPrimary
+            link.underlineStyle = .single
+            saida.append(link)
+            fim = range.upperBound
         }
-        return attributed
+
+        saida.append(AttributedString(String(texto[fim...])))
+        return saida
     }
 
     private func normalizarURL(_ url: URL) -> URL {
@@ -187,4 +211,28 @@ private struct CapaSemFotoView: View {
             }
         }
     }
+}
+
+// MARK: - Rotulo do link
+
+/// Separa "texto comum" de "Rotulo:" imediatamente antes de um endereco.
+///
+/// Devolve o texto que fica na tela e o rotulo que vira o toque — ou nil
+/// quando nao ha rotulo. Para em pontuacao de frase: sem isso,
+/// "…funesto. Ler: http…" devolveria meia frase como rotulo.
+func separarRotulo(_ antes: String) -> (prefixo: String, rotulo: String)? {
+    guard let regex = try? NSRegularExpression(
+        pattern: "([^|;\u{00b7}.,!?\n]{1,30}?)\\s*:\\s*$") else { return nil }
+    let faixa = NSRange(antes.startIndex..<antes.endIndex, in: antes)
+    guard let m = regex.firstMatch(in: antes, options: [], range: faixa),
+          let inteiro = Range(m.range, in: antes),
+          let grupo = Range(m.range(at: 1), in: antes) else { return nil }
+
+    let rotulo = antes[grupo].trimmingCharacters(in: .whitespaces)
+    guard !rotulo.isEmpty else { return nil }
+
+    var prefixo = String(antes[antes.startIndex..<inteiro.lowerBound])
+    prefixo = String(prefixo.reversed().drop(while: { $0 == " " || $0 == "\t" }).reversed())
+    if !prefixo.isEmpty { prefixo += " " }
+    return (prefixo, rotulo)
 }
