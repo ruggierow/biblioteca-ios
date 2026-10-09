@@ -350,10 +350,12 @@ struct CadastroView: View {
                 if !r.comentarios.isEmpty && comentarios.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     comentarios = r.comentarios
                 }
+                comentarios = comISBN(comentarios, isbn)
                 isbnStatus = "Preenchido com sucesso."
                 isbnStatusCor = .bibAccent
             } else {
-                isbnStatus = "ISBN não encontrado em nenhuma base de dados."
+                comentarios = comISBN(comentarios, isbn)
+                isbnStatus = "ISBN não encontrado, mas o número foi guardado."
                 isbnStatusCor = .red
             }
         } catch ISBNError.invalido {
@@ -399,4 +401,23 @@ private struct SugestoesCadastroView: View {
 #Preview("Cadastro novo") {
     CadastroView()
         .environmentObject(BibliotecaStore())
+}
+
+/// Guarda o ISBN no campo de comentarios, no padrao "Rotulo: valor" que ali ja
+/// se usa para Editora, Ler e Kindle. Nao vira coluna nova porque o leitor do
+/// motor-web DESCARTA linha com 9 campos: o livro sumiria no Mac e no Windows,
+/// e o salvamento automatico de la apagaria do arquivo.
+///
+/// Idempotente: reler o mesmo livro nao duplica a marca, e reler com outro
+/// numero substitui — a leitura mais recente vence.
+func comISBN(_ texto: String, _ isbn: String) -> String {
+    let limpo = isbn.uppercased().filter { $0.isNumber || $0 == "X" }
+    guard !limpo.isEmpty else { return texto }
+    let t = texto.trimmingCharacters(in: .whitespacesAndNewlines)
+    let marca = try! NSRegularExpression(pattern: "ISBN:\\s*[0-9Xx-]+")
+    let faixa = NSRange(t.startIndex..., in: t)
+    if marca.firstMatch(in: t, range: faixa) != nil {
+        return marca.stringByReplacingMatches(in: t, range: faixa, withTemplate: "ISBN: " + limpo)
+    }
+    return t.isEmpty ? "ISBN: " + limpo : t + " | ISBN: " + limpo
 }
