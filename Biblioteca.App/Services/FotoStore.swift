@@ -83,7 +83,9 @@ final class FotoStore {
             return
         }
 
-        DispatchQueue.global(qos: .background).async { [weak self] in
+        // Mesma fila da gravação: ler e escrever o `biblioteca.dat` ao mesmo
+        // tempo não pode acontecer.
+        filaDat.async { [weak self] in
             guard let self else { return }
             var texto = ""
             var coordError: NSError?
@@ -114,6 +116,18 @@ final class FotoStore {
 
     /// Agenda (com debounce de 1 s) a publicação de todas as fotos locais em biblioteca.dat.
     /// Chama o completion na main queue com nil (sucesso) ou mensagem de erro.
+    /// Fila SERIAL para tudo que toca o `biblioteca.dat`.
+    ///
+    /// Duas razões. A primeira é o arranque: o `escreverDat` já fazia a
+    /// gravação em segundo plano, mas o `BackupAutomatico` que vem antes dele
+    /// rodava na linha principal — e ele lê os 39 MB do arquivo, lê o backup
+    /// anterior (outros 39 MB), compara os dois e pode gravar mais 39 MB. Um
+    /// segundo depois de abrir, o app congelava sem dizer nada.
+    ///
+    /// A segunda é que esta fila é SERIAL: antes, duas chamadas podiam montar
+    /// e gravar o mesmo arquivo ao mesmo tempo. Nunca mordeu, mas podia.
+    private let filaDat = DispatchQueue(label: "biblioteca.dat", qos: .utility)
+
     func publicarNoICloud(completion: ((String?) -> Void)? = nil) {
         guard iCloudDatURL != nil, iCloudPastaURL != nil else {
             completion?("Pasta do iCloud não vinculada.")
@@ -122,7 +136,9 @@ final class FotoStore {
         datWorkItem?.cancel()
         let item = DispatchWorkItem { [weak self] in self?.escreverDat(completion: completion) }
         datWorkItem = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: item)
+        // O atraso de 1 s continua sendo o amortecedor de gravações seguidas;
+        // o que muda é a fila em que ele espera.
+        filaDat.asyncAfter(deadline: .now() + 1.0, execute: item)
     }
 
     private func escreverDat(completion: ((String?) -> Void)? = nil) {
@@ -143,15 +159,16 @@ final class FotoStore {
                 .ubiquitousItemDownloadingStatus
             if status == .notDownloaded {
                 try? fm.startDownloadingUbiquitousItem(at: datURL)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+                filaDat.asyncAfter(deadline: .now() + 3.0) { [weak self] in
                     self?.escreverDat(completion: completion)
                 }
                 return
             }
         }
 
-        DispatchQueue.global(qos: .background).async { [weak self] in
-            guard let self else { return }
+        // Daqui para baixo já estamos na `filaDat`, fora da linha principal:
+        // não há mais salto de fila, e por isso nada aqui pode tocar a tela.
+        do {
 
             // Capas apagadas em qualquer aparelho. Sem esta consulta, o merge
             // abaixo ressuscitaria no .dat tudo que ainda existe aqui.
