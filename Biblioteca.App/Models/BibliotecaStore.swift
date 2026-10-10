@@ -40,6 +40,14 @@ class BibliotecaStore: ObservableObject {
     // URL com security scope da pasta selecionada.
     private var pastaURL: URL? = nil
 
+    /// Verdadeiro do nascimento do store ate a primeira carga terminar, com ou
+    /// sem sucesso.
+    ///
+    /// Sem isto a lista mostrava "Nenhum livro cadastrado" enquanto o arquivo
+    /// ainda vinha do iCloud — afirmando que a biblioteca esta vazia quando ela
+    /// so nao chegou. A tela parecia pronta e nao estava.
+    @Published var carregando = false
+
     init() {
         restaurarArquivo()
     }
@@ -64,7 +72,7 @@ class BibliotecaStore: ObservableObject {
             configurarFotoStore(para: pasta)
             GruposStore.shared.carregar(de: pasta)
             if let url = arquivoURL {
-                carregarDoArquivo(url)
+                carregarDoArquivoEmSegundoPlano(url)
             }
         } catch {
             pasta.stopAccessingSecurityScopedResource()
@@ -90,7 +98,7 @@ class BibliotecaStore: ObservableObject {
             arquivoURL = txt
             configurarFotoStore(para: pasta)
             GruposStore.shared.carregar(de: pasta)
-            carregarDoArquivo(txt)
+            carregarDoArquivoEmSegundoPlano(txt)
             // Scope mantido ativo — liberado em deinit ou ao trocar de pasta.
         } catch {
             UserDefaults.standard.removeObject(forKey: Self.bookmarkKey)
@@ -104,6 +112,27 @@ class BibliotecaStore: ObservableObject {
         FotoStore.shared.iCloudPastaURL = pasta
         FotoStore.shared.sincronizarComDat()
         FotoStore.shared.publicarNoICloud()
+    }
+
+    /// Lê fora da linha principal e avisa a tela enquanto isso.
+    ///
+    /// `lerCoordenado` pode esperar o iCloud terminar de baixar o arquivo, e
+    /// essa espera acontecia dentro do `init()` do store: a janela só aparecia
+    /// depois, e a lista dizia "Nenhum livro cadastrado" no intervalo.
+    func carregarDoArquivoEmSegundoPlano(_ url: URL) {
+        carregando = true
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            var lidos: [Livro]? = nil
+            var falha: String? = nil
+            do { lidos = self.parsear(try self.lerCoordenado(url)) }
+            catch { falha = "Erro ao carregar: \(error.localizedDescription)" }
+            DispatchQueue.main.async {
+                if let lidos { self.livros = lidos; self.ultimaRecarga = Date() }
+                self.erroMensagem = falha
+                self.carregando = false
+            }
+        }
     }
 
     func carregarDoArquivo(_ url: URL) {

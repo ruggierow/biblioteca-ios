@@ -47,7 +47,15 @@ struct PesquisaView: View {
                 }
             }
 
-            if livrosFiltrados.isEmpty {
+            // "Nenhum livro cadastrado" só vale depois que a carga terminou.
+            // Dito antes, afirma que a biblioteca está vazia quando ela apenas
+            // ainda não chegou do iCloud — e o arquivo pode demorar.
+            if store.carregando && livrosFiltrados.isEmpty {
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text("Carregando a biblioteca…").foregroundColor(.secondary)
+                }
+            } else if livrosFiltrados.isEmpty {
                 Text(filtro.ativo ? "Nenhum resultado" : "Nenhum livro cadastrado")
                     .foregroundColor(.secondary)
             } else {
