@@ -226,6 +226,7 @@ class BibliotecaStore: ObservableObject {
                 l.comentarios    = c.count > 5 ? c[5] : ""
                 l.local          = c.count > 6 ? c[6] : ""
                 l.grupos = c.count > 7 ? c[7].trimmingCharacters(in: .whitespacesAndNewlines) : "0"
+                l.pais   = c.count > 8 ? c[8].trimmingCharacters(in: .whitespacesAndNewlines).uppercased() : ""
                 return l
             }
     }
@@ -238,7 +239,7 @@ class BibliotecaStore: ObservableObject {
 
     func serializar() -> String {
         livros.map { l in
-            [
+            var campos = [
                 l.titulo,
                 l.autores.joined(separator: "; "),
                 l.temas.joined(separator: "; "),
@@ -247,7 +248,13 @@ class BibliotecaStore: ObservableObject {
                 l.comentarios,
                 l.local,
                 l.grupos
-            ].joined(separator: "\t")
+            ]
+            // A 9a coluna so e escrita quando ha pais. Escrever sempre deixaria
+            // um tabulador no fim de toda linha e faria o arquivo inteiro
+            // aparecer como alterado a cada gravacao.
+            let pais = l.pais.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !pais.isEmpty { campos.append(pais) }
+            return campos.joined(separator: "\t")
         }.joined(separator: "\n")
     }
 }
