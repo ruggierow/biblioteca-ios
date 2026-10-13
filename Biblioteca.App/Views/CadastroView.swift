@@ -13,6 +13,7 @@ struct CadastroView: View {
     @State private var ano = ""
     @State private var comentarios = ""
     @State private var local = ""
+    @State private var pais = ""
     @State private var emprestado = false
     @State private var gruposSelecionados: Set<Int> = []
 
@@ -141,6 +142,21 @@ struct CadastroView: View {
                     SugestoesCadastroView(sugestoes: sugestoesLocal) { sugestao in
                         local = sugestao
                     }
+                    // Livro sem país é o estado normal — por isso o vazio vem
+                    // primeiro e continua alcançável: sem ele não haveria como
+                    // DESFAZER um país posto por engano.
+                    Picker("País", selection: $pais) {
+                        Text("— sem país —").tag("")
+                        ForEach(Paises.ordenados, id: \.iso) { p in
+                            Text(p.nome).tag(p.iso)
+                        }
+                        // Um código gravado fora da tabela precisa ter opção,
+                        // senão o Picker abre em branco e salvar apaga o país
+                        // do livro sem avisar.
+                        if !pais.isEmpty && !Paises.conhecido(pais) {
+                            Text("\(pais) (fora da tabela)").tag(pais)
+                        }
+                    }
                 }
 
                 // ── Autores ───────────────────────────────────
@@ -257,6 +273,7 @@ struct CadastroView: View {
         ano            = l.ano
         comentarios    = l.comentarios
         local          = l.local
+        pais           = l.pais
         emprestado     = l.emprestado
         gruposSelecionados = Set(l.listaGrupos)
         fotoExistente  = FotoStore.shared.carregar(livroId: l.fotoId)
@@ -313,6 +330,7 @@ struct CadastroView: View {
         l.ano            = ano.trimmingCharacters(in: .whitespaces)
         l.comentarios    = comentarios
         l.local          = local.trimmingCharacters(in: .whitespaces)
+        l.pais           = pais.trimmingCharacters(in: .whitespaces).uppercased()
         l.emprestado     = emprestado
         l.listaGrupos    = gruposSelecionados.sorted()
 

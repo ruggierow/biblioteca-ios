@@ -24,6 +24,14 @@ enum Paises {
         "MZ": "Moçambique", "ZA": "África do Sul", "AU": "Austrália",
     ]
 
+    /// Os países em ordem alfabética pelo NOME mostrado.
+    ///
+    /// É a lista do seletor do formulário, e sai da MESMA tabela que dá nome ao
+    /// país na tela: só se pode escolher um país que o app sabe nomear.
+    static let ordenados: [(iso: String, nome: String)] = nomes
+        .map { (iso: $0.key, nome: $0.value) }
+        .sorted { $0.nome.localizedCaseInsensitiveCompare($1.nome) == .orderedAscending }
+
     /// O nome do país, ou o próprio código quando ele não está na tabela.
     ///
     /// Devolver o código em vez de vazio é de propósito: um país desconhecido

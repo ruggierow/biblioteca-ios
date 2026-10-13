@@ -23,6 +23,34 @@ final class PaisesTests: XCTestCase {
         XCTAssertFalse(Paises.conhecido("ZZ"))
     }
 
+    // MARK: - A lista do seletor do formulário
+    //
+    // O campo de país entrou em 13/10/2026. Até ele, os 280 países da base
+    // vinham todos de `bin/semear-pais.py`, de fora do app, e não havia como
+    // pôr nem CORRIGIR o país de um livro.
+
+    func testOSeletorOfereceTodoPaisQueOAppSabeNomear() {
+        XCTAssertEqual(Paises.ordenados.count, 47)
+        for p in Paises.ordenados {
+            XCTAssertTrue(Paises.conhecido(p.iso))
+            XCTAssertEqual(Paises.nome(p.iso), p.nome)
+        }
+        XCTAssertEqual(Set(Paises.ordenados.map(\.iso)).count, Paises.ordenados.count)
+    }
+
+    // Ordem pelo NOME mostrado, não pelo código: pelo código a lista começaria
+    // em AO (Angola). E a inicial acentuada tem de ficar no lugar da LETRA —
+    // numa comparação por código de caractere, "Áustria" e "Índia" iriam para
+    // o fim da lista, longe de onde alguém as procura. (Em 13/10/2026 era
+    // exatamente isso que acontecia no Android, que não tem colação local.)
+    func testOrdemPeloNomeIgnorandoAcento() {
+        let nomes = Paises.ordenados.map(\.nome)
+        XCTAssertEqual(nomes.first, "África do Sul")
+        XCTAssertLessThan(nomes.firstIndex(of: "Alemanha")!, nomes.firstIndex(of: "Angola")!)
+        XCTAssertEqual(nomes.firstIndex(of: "Áustria"), nomes.firstIndex(of: "Austrália")! + 1)
+        XCTAssertLessThan(nomes.firstIndex(of: "Índia")!, nomes.firstIndex(of: "Irã")!)
+    }
+
     func testFiltroAceitaSoOPaisEscolhido() {
         var f = FiltroPesquisa()
         f.pais = "BR"
