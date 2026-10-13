@@ -55,6 +55,13 @@ struct ContentView: View {
                         .disabled(store.arquivoURL == nil)
 
                         NavigationLink {
+                            PaisesView()
+                        } label: {
+                            MenuRow(icon: "globe", title: "Países")
+                        }
+                        .disabled(store.arquivoURL == nil)
+
+                        NavigationLink {
                             PesquisaView()
                         } label: {
                             MenuRow(icon: "magnifyingglass", title: "Pesquisa")

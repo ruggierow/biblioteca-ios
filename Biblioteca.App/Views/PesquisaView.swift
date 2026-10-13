@@ -4,8 +4,17 @@ struct PesquisaView: View {
     @EnvironmentObject var store: BibliotecaStore
     @ObservedObject private var gruposStore = GruposStore.shared
 
-    @State private var filtro = FiltroPesquisa()
+    @State private var filtro: FiltroPesquisa
     @State private var mostrandoFiltros = false
+
+    /// A tela de Países abre a Pesquisa já filtrada. O país entra no MESMO
+    /// campo que a folha de filtros usa — um segundo caminho divergiria do
+    /// primeiro na primeira mudança.
+    init(paisInicial: String = "") {
+        var f = FiltroPesquisa()
+        f.pais = paisInicial.trimmingCharacters(in: .whitespaces).uppercased()
+        _filtro = State(initialValue: f)
+    }
 
     private var livrosFiltrados: [Livro] {
         var lista = store.livros.filter { filtro.aceita($0) }

@@ -29,11 +29,19 @@ struct FiltroPesquisa {
     var grupo: FiltroGrupo = .todos
     var comFoto: Bool = false
 
+    /// Código ISO do país, vazio quando não há filtro de país.
+    ///
+    /// Quem liga este filtro é a tela de Países — no celular não há mapa, por
+    /// decisão do usuário: "no iPhone e no Android faça por tabela e não por
+    /// mapa". Mapa clicável com quase quarenta países num polegar não funciona.
+    var pais: String = ""
+
     var ativo: Bool {
         !texto.trimmingCharacters(in: .whitespaces).isEmpty
             || status != .todos
             || grupo != .todos
             || comFoto
+            || !pais.isEmpty
     }
 
     /// Quantos filtros estao ligados — vira o numerinho ao lado do botao.
@@ -42,6 +50,7 @@ struct FiltroPesquisa {
         if status != .todos { n += 1 }
         if grupo != .todos { n += 1 }
         if comFoto { n += 1 }
+        if !pais.isEmpty { n += 1 }
         return n
     }
 
@@ -59,6 +68,7 @@ struct FiltroPesquisa {
         case .especifico(let id): partes.append(nomeDoGrupo(id))
         }
         if comFoto { partes.append("Com foto") }
+        if !pais.isEmpty { partes.append(Paises.nome(pais)) }
         return partes.joined(separator: " · ")
     }
 
@@ -72,6 +82,10 @@ struct FiltroPesquisa {
         case .todos: break
         case .qualquer: if !livro.grupoLiteratura { return false }
         case .especifico(let id): if !livro.listaGrupos.contains(id) { return false }
+        }
+        if !pais.isEmpty,
+           livro.pais.trimmingCharacters(in: .whitespaces).uppercased() != pais.uppercased() {
+            return false
         }
         return true
     }
