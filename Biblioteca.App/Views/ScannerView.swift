@@ -110,7 +110,7 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
     private func adicionarBotaoCancelar() {
         let btn = UIButton(type: .system)
         var configuration = UIButton.Configuration.filled()
-        configuration.title = "Cancelar"
+        configuration.title = t("cancelar")
         configuration.baseForegroundColor = .white
         configuration.baseBackgroundColor = UIColor.black.withAlphaComponent(0.5)
         configuration.cornerStyle = .medium
@@ -141,7 +141,7 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
         ])
 
         let label = UILabel()
-        label.text = "Aponte para o código de barras do livro"
+        label.text = t("aponteParaCodigo")
         label.textColor = .white
         label.font = .systemFont(ofSize: 14)
         label.textAlignment = .center
@@ -169,7 +169,7 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
         icone.heightAnchor.constraint(equalToConstant: 52).isActive = true
 
         let titulo = UILabel()
-        titulo.text = permissaoNegada ? "Acesso à câmera negado" : "Câmera não disponível"
+        titulo.text = permissaoNegada ? t("acessoCameraNegado") : t("cameraNaoDisponivel")
         titulo.textColor = .white
         titulo.font = .systemFont(ofSize: 20, weight: .semibold)
         titulo.textAlignment = .center
@@ -178,11 +178,11 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
         let msg = UILabel()
         msg.text = switch estado {
         case .restrita:
-            "O acesso à câmera está bloqueado neste dispositivo."
+            t("cameraBloqueada")
         case .some:
-            "Para escanear o código de barras, permita o acesso à câmera nas configurações do dispositivo."
+            t("permissaoScanner")
         case .none:
-            "Este dispositivo não tem câmera (por exemplo, o simulador). Digite o ISBN manualmente."
+            t("semCameraNoDispositivo")
         }
         msg.textColor = UIColor.white.withAlphaComponent(0.85)
         msg.font = .systemFont(ofSize: 15)
@@ -196,12 +196,12 @@ class ScannerViewController: UIViewController, AVCaptureMetadataOutputObjectsDel
 
         // Nao adianta oferecer Configuracoes quando a permissao e restrita.
         if estado?.adiantaAbrirConfiguracoes == true {
-            container.addArrangedSubview(botao(titulo: "Abrir Configurações", preenchido: true, acao: #selector(abrirAjustes)))
+            container.addArrangedSubview(botao(titulo: t("abrirConfiguracoes"), preenchido: true, acao: #selector(abrirAjustes)))
         }
         if temEntradaManual {
-            container.addArrangedSubview(botao(titulo: "Digitar ISBN", preenchido: !permissaoNegada, acao: #selector(digitarISBN)))
+            container.addArrangedSubview(botao(titulo: t("digitarIsbn"), preenchido: !permissaoNegada, acao: #selector(digitarISBN)))
         }
-        container.addArrangedSubview(botao(titulo: "Cancelar", preenchido: false, acao: #selector(cancelar)))
+        container.addArrangedSubview(botao(titulo: t("cancelar"), preenchido: false, acao: #selector(cancelar)))
 
         view.addSubview(container)
         avisoEmTela = container

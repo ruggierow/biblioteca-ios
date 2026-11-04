@@ -16,31 +16,31 @@ struct SincronizacaoView: View {
 
     var body: some View {
         List {
-            Section("Arquivo") {
+            Section(t("arquivo")) {
                 if let arquivoURL = store.arquivoURL {
-                    LabeledContent("Selecionado", value: arquivoURL.lastPathComponent)
-                    LabeledContent("Livros carregados", value: "\(store.livros.count)")
+                    LabeledContent(t("selecionado"), value: arquivoURL.lastPathComponent)
+                    LabeledContent(t("livrosCarregadosRotulo"), value: "\(store.livros.count)")
                     if let quando = store.ultimaRecarga {
-                        LabeledContent("Recarregado") {
+                        LabeledContent(t("recarregado")) {
                             Label(quando.formatted(date: .omitted, time: .shortened),
                                   systemImage: "arrow.clockwise.circle.fill")
                                 .foregroundStyle(Color.bibAccent)
                         }
                     }
                     if let quando = store.ultimaGravacao {
-                        LabeledContent("Salvo") {
+                        LabeledContent(t("salvo")) {
                             Label(quando.formatted(date: .omitted, time: .shortened),
                                   systemImage: "checkmark.circle.fill")
                                 .foregroundStyle(Color.bibAccent)
                         }
                     }
                     LabeledContent("iCloud Drive") {
-                        Label(noICloud ? "Sim" : "Não",
+                        Label(noICloud ? t("sim") : t("nao"),
                               systemImage: noICloud ? "checkmark.icloud.fill" : "icloud.slash")
                             .foregroundStyle(noICloud ? Color.bibAccent : Color.bibDanger)
                     }
                 } else {
-                    Text("Nenhum arquivo vinculado")
+                    Text(t("nenhumArquivoVinculado"))
                         .foregroundColor(.secondary)
                 }
             }
@@ -49,7 +49,7 @@ struct SincronizacaoView: View {
                 Button {
                     mostrarSeletor = true
                 } label: {
-                    Label(store.arquivoURL == nil ? "Selecionar pasta Biblioteca" : "Trocar pasta", systemImage: "folder.badge.plus")
+                    Label(store.arquivoURL == nil ? t("selecionarPastaBiblioteca") : t("trocarPasta"), systemImage: "folder.badge.plus")
                 }
 
                 Button {
@@ -60,7 +60,7 @@ struct SincronizacaoView: View {
                         feedbackRecarregar = erro
                         feedbackRecarregarSucesso = false
                     } else {
-                        feedbackRecarregar = "Arquivo e fotos recarregados do iCloud."
+                        feedbackRecarregar = t("arquivoEFotosRecarregados")
                         feedbackRecarregarSucesso = true
                         Task {
                             try? await Task.sleep(for: .seconds(3))
@@ -68,7 +68,7 @@ struct SincronizacaoView: View {
                         }
                     }
                 } label: {
-                    Label("Recarregar do iCloud", systemImage: "arrow.clockwise")
+                    Label(t("recarregarDoICloud"), systemImage: "arrow.clockwise")
                 }
                 .disabled(store.arquivoURL == nil)
 
@@ -81,7 +81,7 @@ struct SincronizacaoView: View {
                 Button {
                     store.erroMensagem = nil
                     store.salvar()
-                    feedbackGravar = "Gravando fotos no iCloud…"
+                    feedbackGravar = t("gravandoFotos")
                     feedbackSucesso = true
                     if let erro = store.erroMensagem {
                         feedbackGravar = erro
@@ -92,7 +92,7 @@ struct SincronizacaoView: View {
                                 feedbackGravar = erroDat
                                 feedbackSucesso = false
                             } else {
-                                feedbackGravar = "Texto e fotos gravados no iCloud."
+                                feedbackGravar = t("textoEFotosGravados")
                                 feedbackSucesso = true
                                 Task {
                                     try? await Task.sleep(for: .seconds(4))
@@ -102,7 +102,7 @@ struct SincronizacaoView: View {
                         }
                     }
                 } label: {
-                    Label("Gravar no iCloud", systemImage: "icloud.and.arrow.up")
+                    Label(t("gravarNoICloud"), systemImage: "icloud.and.arrow.up")
                 }
                 .disabled(store.arquivoURL == nil)
 
@@ -114,19 +114,19 @@ struct SincronizacaoView: View {
             }
 
             Section {
-                Label("No Mac, coloque o biblioteca.txt no iCloud Drive e abra o app do Mac.",
+                Label(t("passoMac1"),
                       systemImage: "1.circle.fill")
-                Label("Aqui no iPhone, toque em Selecionar e escolha a pasta Biblioteca no iCloud Drive (não o arquivo).",
+                Label(t("passoMac2"),
                       systemImage: "2.circle.fill")
-                Label("Antes de editar aqui, toque em Recarregar do iCloud se você alterou a base no Mac.",
+                Label(t("passoMac3"),
                       systemImage: "arrow.triangle.2.circlepath")
             } header: {
-                Text("Como sincronizar com o Mac")
+                Text(t("comoSincronizarComMac"))
             } footer: {
-                Text("Evite editar no Mac e no iPhone ao mesmo tempo. Como a base é um arquivo compartilhado, pode valer a última gravação.")
+                Text(t("avisoEdicaoSimultanea"))
             }
         }
-        .navigationTitle("Sincronização")
+        .navigationTitle(t("sincronizacao"))
         .tint(.bibPrimary)
         .fileImporter(
             isPresented: $mostrarSeletor,

@@ -12,8 +12,14 @@ final class PaisesTests: XCTestCase {
     }
 
     func testTraduzOCodigo() {
-        XCTAssertEqual(Paises.nome("BR"), "Brasil")
-        XCTAssertEqual(Paises.nome("jp"), "Japão")
+        // O idioma é PEDIDO aqui, e isso não é zelo: no iOS os testes são
+        // hospedados pelo app, que é lançado de verdade e lê o idioma do
+        // APARELHO. Num simulador em inglês este teste afirmava "Brasil" e
+        // recebia "Brazil". Teste que afirma texto visível diz a língua.
+        comIdiomaNoTeste("pt") {
+            XCTAssertEqual(Paises.nome("BR"), "Brasil")
+            XCTAssertEqual(Paises.nome("jp"), "Japão")
+        }
     }
 
     // Um país fora da tabela tem de APARECER, para alguém notar e acrescentá-lo.
@@ -44,11 +50,17 @@ final class PaisesTests: XCTestCase {
     // o fim da lista, longe de onde alguém as procura. (Em 13/10/2026 era
     // exatamente isso que acontecia no Android, que não tem colação local.)
     func testOrdemPeloNomeIgnorandoAcento() {
-        let nomes = Paises.ordenados.map(\.nome)
-        XCTAssertEqual(nomes.first, "África do Sul")
-        XCTAssertLessThan(nomes.firstIndex(of: "Alemanha")!, nomes.firstIndex(of: "Angola")!)
-        XCTAssertEqual(nomes.firstIndex(of: "Áustria"), nomes.firstIndex(of: "Austrália")! + 1)
-        XCTAssertLessThan(nomes.firstIndex(of: "Índia")!, nomes.firstIndex(of: "Irã")!)
+        // O idioma é PEDIDO aqui, e isso não é zelo: no iOS os testes são
+        // hospedados pelo app, que é lançado de verdade e lê o idioma do
+        // APARELHO. Num simulador em inglês este teste afirmava "Brasil" e
+        // recebia "Brazil". Teste que afirma texto visível diz a língua.
+        comIdiomaNoTeste("pt") {
+            let nomes = Paises.ordenados.map(\.nome)
+            XCTAssertEqual(nomes.first, "África do Sul")
+            XCTAssertLessThan(nomes.firstIndex(of: "Alemanha")!, nomes.firstIndex(of: "Angola")!)
+            XCTAssertEqual(nomes.firstIndex(of: "Áustria"), nomes.firstIndex(of: "Austrália")! + 1)
+            XCTAssertLessThan(nomes.firstIndex(of: "Índia")!, nomes.firstIndex(of: "Irã")!)
+        }
     }
 
     func testFiltroAceitaSoOPaisEscolhido() {

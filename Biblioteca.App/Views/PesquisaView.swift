@@ -31,9 +31,11 @@ struct PesquisaView: View {
     private var contagemTexto: String {
         let n = livrosFiltrados.count
         if !filtro.ativo {
-            return n == 1 ? "1 livro" : "\(n) livros"
+            return n == 1 ? t("umLivroContagem") : t("variosLivrosContagem", [n])
         } else {
-            return n == 1 ? "1 livro encontrado" : "\(n) livros encontrados"
+            return n == 1
+                ? t("umLivroEncontrado")
+                : t("variosLivrosEncontrados", [n])
         }
     }
 
@@ -50,22 +52,22 @@ struct PesquisaView: View {
                             .font(.footnote)
                             .foregroundColor(.secondary)
                         Spacer()
-                        Button("Limpar") { filtro.limpar() }
+                        Button(t("limpar")) { filtro.limpar() }
                             .font(.footnote)
                     }
                 }
             }
 
-            // "Nenhum livro cadastrado" só vale depois que a carga terminou.
+            // t("nenhumLivroCadastrado") só vale depois que a carga terminou.
             // Dito antes, afirma que a biblioteca está vazia quando ela apenas
             // ainda não chegou do iCloud — e o arquivo pode demorar.
             if store.carregando && livrosFiltrados.isEmpty {
                 HStack(spacing: 12) {
                     ProgressView()
-                    Text("Carregando a biblioteca…").foregroundColor(.secondary)
+                    Text(t("carregandoBiblioteca")).foregroundColor(.secondary)
                 }
             } else if livrosFiltrados.isEmpty {
-                Text(filtro.ativo ? "Nenhum resultado" : "Nenhum livro cadastrado")
+                Text(filtro.ativo ? t("nenhumResultado") : t("nenhumLivroCadastrado"))
                     .foregroundColor(.secondary)
             } else {
                 Section {
@@ -96,16 +98,16 @@ struct PesquisaView: View {
                 }
             }
         }
-        .navigationTitle("Pesquisa")
+        .navigationTitle(t("pesquisa"))
         .tint(.bibPrimary)
         .searchable(text: $filtro.texto,
-                    prompt: "Buscar por título, autor, tema, local ou ano")
+                    prompt: t("buscarPlaceholder"))
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     mostrandoFiltros = true
                 } label: {
-                    Label("Filtros", systemImage: filtro.quantosLigados > 0
+                    Label(t("filtros"), systemImage: filtro.quantosLigados > 0
                           ? "line.3.horizontal.decrease.circle.fill"
                           : "line.3.horizontal.decrease.circle")
                         .foregroundStyle(filtro.quantosLigados > 0

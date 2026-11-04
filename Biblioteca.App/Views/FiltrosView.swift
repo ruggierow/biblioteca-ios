@@ -11,8 +11,8 @@ struct FiltrosView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Status") {
-                    Picker("Status", selection: $filtro.status) {
+                Section(t("status")) {
+                    Picker(t("status"), selection: $filtro.status) {
                         ForEach(FiltroStatus.allCases) { s in
                             Text(s.rotulo).tag(s)
                         }
@@ -21,10 +21,10 @@ struct FiltrosView: View {
                     .labelsHidden()
                 }
 
-                Section("Grupo de literatura") {
-                    Picker("Grupo", selection: $filtro.grupo) {
-                        Text("Todos os livros").tag(FiltroGrupo.todos)
-                        Text("Qualquer grupo").tag(FiltroGrupo.qualquer)
+                Section(t("grupoDeLiteratura")) {
+                    Picker(t("grupo"), selection: $filtro.grupo) {
+                        Text(t("todosOsLivros")).tag(FiltroGrupo.todos)
+                        Text(t("qualquerGrupo")).tag(FiltroGrupo.qualquer)
                         ForEach(grupos) { g in
                             Text(g.nome).tag(FiltroGrupo.especifico(g.id))
                         }
@@ -33,19 +33,19 @@ struct FiltrosView: View {
                 }
 
                 Section {
-                    Toggle("Só livros com foto", isOn: $filtro.comFoto)
+                    Toggle(t("soLivrosComFoto"), isOn: $filtro.comFoto)
                 }
             }
-            .navigationTitle("Filtros")
+            .navigationTitle(t("filtros"))
             .navigationBarTitleDisplayMode(.inline)
             .tint(.bibPrimary)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Limpar") { filtro.limpar() }
+                    Button(t("limpar")) { filtro.limpar() }
                         .disabled(filtro.quantosLigados == 0)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Pronto") { dismiss() }.bold()
+                    Button(t("pronto")) { dismiss() }.bold()
                 }
             }
         }

@@ -76,7 +76,7 @@ class BibliotecaStore: ObservableObject {
             }
         } catch {
             pasta.stopAccessingSecurityScopedResource()
-            erroMensagem = "Erro ao vincular pasta: \(error.localizedDescription)"
+            erroMensagem = t("erroAoVincularPasta", [error.localizedDescription])
         }
     }
 
@@ -126,7 +126,7 @@ class BibliotecaStore: ObservableObject {
             var lidos: [Livro]? = nil
             var falha: String? = nil
             do { lidos = self.parsear(try self.lerCoordenado(url)) }
-            catch { falha = "Erro ao carregar: \(error.localizedDescription)" }
+            catch { falha = t("erroAoCarregar", [error.localizedDescription]) }
             DispatchQueue.main.async {
                 if let lidos { self.livros = lidos; self.ultimaRecarga = Date() }
                 self.erroMensagem = falha
@@ -141,7 +141,7 @@ class BibliotecaStore: ObservableObject {
             livros = parsear(texto)
             ultimaRecarga = Date()
         } catch {
-            erroMensagem = "Erro ao carregar: \(error.localizedDescription)"
+            erroMensagem = t("erroAoCarregar", [error.localizedDescription])
         }
     }
 
@@ -179,7 +179,7 @@ class BibliotecaStore: ObservableObject {
             do { try texto.write(to: u, atomically: true, encoding: .utf8) } catch { escreverErro = error }
         }
         if let e = coordErro ?? (escreverErro as NSError?) {
-            erroMensagem = "Erro ao salvar: \(e.localizedDescription)"
+            erroMensagem = t("erroAoSalvar", [e.localizedDescription])
         } else {
             ultimaGravacao = Date()
         }

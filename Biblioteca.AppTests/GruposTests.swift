@@ -68,33 +68,51 @@ struct GruposTests {
     /// continuar passando, e porque alguem mudou os dois — que e o certo.
     @Test("le o grupos.json que o Mac grava")
     func leGruposJson() throws {
-        let pasta = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: pasta, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: pasta) }
+        // O idioma é PEDIDO aqui, e isso não é zelo: no iOS os testes são
+        // hospedados pelo app, que é lançado de verdade e lê o idioma do
+        // APARELHO. Num simulador em inglês este teste afirmava "Brasil" e
+        // recebia "Brazil". Teste que afirma texto visível diz a língua.
+        try comIdiomaNoTeste("pt") {
+            let pasta = URL(fileURLWithPath: NSTemporaryDirectory())
+                .appendingPathComponent(UUID().uuidString)
+            try FileManager.default.createDirectory(at: pasta, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: pasta) }
 
-        let payload = #"{"versao":1,"grupos":[{"id":1,"nome":"Grupo de Literatura"},{"id":2,"nome":"Clube da Tarde"}]}"#
-        try payload.write(to: pasta.appendingPathComponent("grupos.json"),
-                          atomically: true, encoding: .utf8)
+            let payload = #"{"versao":1,"grupos":[{"id":1,"nome":"Grupo de Literatura"},{"id":2,"nome":"Clube da Tarde"}]}"#
+            try payload.write(to: pasta.appendingPathComponent("grupos.json"),
+                              atomically: true, encoding: .utf8)
 
-        let store = GruposStore()
-        store.carregar(de: pasta)
-        #expect(store.nome(1) == "Grupo de Literatura")
-        #expect(store.nome(2) == "Clube da Tarde")
-        #expect(store.nome(9) == "Grupo 9")
+            let store = GruposStore()
+            store.carregar(de: pasta)
+            #expect(store.nome(1) == "Grupo de Literatura")
+            #expect(store.nome(2) == "Clube da Tarde")
+            #expect(store.nome(9) == "Grupo 9")
+        }
     }
 
     @Test("pasta sem grupos.json mantem o padrao, sem estourar")
     func semGruposJson() {
-        let store = GruposStore()
-        store.carregar(de: URL(fileURLWithPath: "/caminho/que/nao/existe"))
-        store.carregar(de: nil)
-        #expect(store.nome(1) == "Grupo de Literatura")
+        // O idioma é PEDIDO aqui, e isso não é zelo: no iOS os testes são
+        // hospedados pelo app, que é lançado de verdade e lê o idioma do
+        // APARELHO. Num simulador em inglês este teste afirmava "Brasil" e
+        // recebia "Brazil". Teste que afirma texto visível diz a língua.
+        comIdiomaNoTeste("pt") {
+            let store = GruposStore()
+            store.carregar(de: URL(fileURLWithPath: "/caminho/que/nao/existe"))
+            store.carregar(de: nil)
+            #expect(store.nome(1) == "Grupo de Literatura")
+        }
     }
 
     @Test("grupo sem nome conhecido vira \"Grupo N\"")
     func nomeDesconhecido() {
-        #expect(GruposStore.shared.nome(97) == "Grupo 97")
+        // O idioma é PEDIDO aqui, e isso não é zelo: no iOS os testes são
+        // hospedados pelo app, que é lançado de verdade e lê o idioma do
+        // APARELHO. Num simulador em inglês este teste afirmava "Brasil" e
+        // recebia "Brazil". Teste que afirma texto visível diz a língua.
+        comIdiomaNoTeste("pt") {
+            #expect(GruposStore.shared.nome(97) == "Grupo 97")
+        }
     }
 
     @Test("o seletor oferece tambem os grupos que so aparecem nos livros")
@@ -166,12 +184,16 @@ struct FiltroPesquisaTests {
 
     @Test("o resumo nomeia o grupo escolhido")
     func resumo() {
-        var f = FiltroPesquisa()
-        f.status = .emprestados
-        f.grupo = .especifico(2)
-        f.comFoto = true
-        let texto = f.resumo(nomeDoGrupo: { "Clube \($0)" })
-        #expect(texto == "Emprestados · Clube 2 · Com foto")
-        #expect(FiltroPesquisa().resumo(nomeDoGrupo: { _ in "x" }).isEmpty)
+        // Em que língua? O resumo é texto visível, e no iOS o app hospedeiro
+        // lê o idioma do APARELHO — num simulador em inglês daria "On loan".
+        comIdiomaNoTeste("pt") {
+            var f = FiltroPesquisa()
+            f.status = .emprestados
+            f.grupo = .especifico(2)
+            f.comFoto = true
+            let texto = f.resumo(nomeDoGrupo: { "Clube \($0)" })
+            #expect(texto == "Emprestados · Clube 2 · Com foto")
+            #expect(FiltroPesquisa().resumo(nomeDoGrupo: { _ in "x" }).isEmpty)
+        }
     }
 }

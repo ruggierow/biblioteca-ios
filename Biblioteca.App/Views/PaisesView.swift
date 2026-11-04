@@ -31,8 +31,7 @@ struct PaisesView: View {
         List {
             Section {
                 if paises.isEmpty {
-                    Text("O país vem do tema do livro ou do ISBN. "
-                         + "Leia o código de barras de um livro para começar.")
+                    Text(t("paisVemDoTema") + t("leiaCodigoParaComecar"))
                         .foregroundColor(.secondary)
                         .font(.callout)
                 } else {
@@ -55,12 +54,16 @@ struct PaisesView: View {
                 }
             } footer: {
                 if !paises.isEmpty {
-                    Text("\(comPais) \(comPais == 1 ? "livro" : "livros") em "
-                         + "\(paises.count) \(paises.count == 1 ? "país" : "países")"
-                         + (semPais > 0 ? " · \(semPais) ainda sem país" : ""))
+                    Text(t("acervoEmPaises", [
+                            comPais,
+                            comPais == 1 ? t("umLivro") : t("variosLivros"),
+                            paises.count,
+                            paises.count == 1 ? t("umPais") : t("variosPaises"),
+                         ])
+                         + (semPais > 0 ? t("aindaSemPais", [semPais]) : ""))
                 }
             }
         }
-        .navigationTitle("Países")
+        .navigationTitle(t("paises"))
     }
 }

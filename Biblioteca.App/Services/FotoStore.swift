@@ -130,7 +130,7 @@ final class FotoStore {
 
     func publicarNoICloud(completion: ((String?) -> Void)? = nil) {
         guard iCloudDatURL != nil, iCloudPastaURL != nil else {
-            completion?("Pasta do iCloud não vinculada.")
+            completion?(t("pastaICloudNaoVinculada"))
             return
         }
         datWorkItem?.cancel()
@@ -148,7 +148,7 @@ final class FotoStore {
             BackupAutomatico.executar(para: url, maximo: BackupAutomatico.maximoDat)
         }
         guard let datURL = iCloudDatURL else {
-            DispatchQueue.main.async { completion?("URL do dat não definida.") }
+            DispatchQueue.main.async { completion?(t("urlDatNaoDefinida")) }
             return
         }
         let fm = FileManager.default
@@ -203,7 +203,7 @@ final class FotoStore {
             }
 
             guard !dictLocal.isEmpty else {
-                DispatchQueue.main.async { completion?("Nenhuma foto local para gravar.") }
+                DispatchQueue.main.async { completion?(t("nenhumaFotoLocal")) }
                 return
             }
 
@@ -251,7 +251,7 @@ final class FotoStore {
                 if escreveu {
                     completion?(nil)
                 } else {
-                    completion?("Erro ao gravar fotos: \(coordError?.localizedDescription ?? "falha desconhecida")")
+                    completion?(t("erroAoGravarFotos", [coordError?.localizedDescription ?? t("falhaDesconhecida")]))
                 }
             }
         }

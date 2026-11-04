@@ -20,9 +20,9 @@ enum FormatoCapa: CaseIterable, Equatable {
 
     var descricao: String {
         switch self {
-        case .retrato:  return "Livro padrão"
-        case .quadrado: return "Arte / catálogo"
-        case .largo:    return "Álbum / atlas"
+        case .retrato:  return t("proporcaoRetrato")
+        case .quadrado: return t("proporcaoQuadrado")
+        case .largo:    return t("proporcaoLargo")
         }
     }
 
@@ -170,7 +170,7 @@ struct CapaCameraView: View {
                         CantosGuiaView(guia: guia)
 
                         // Instrução: incentiva enquadre com folga para Vision funcionar melhor
-                        Text("Enquadre a capa com uma folga nas bordas")
+                        Text(t("enquadreACapa"))
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 12)
@@ -200,7 +200,7 @@ struct CapaCameraView: View {
 
             // ── Controles inferiores ───────────────────────
             VStack(spacing: 8) {
-                Text("Reajustar proporção")
+                Text(t("reajustarProporcao"))
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.5))
 
@@ -242,7 +242,7 @@ struct CapaCameraView: View {
                 if modelo.processando {
                     VStack(spacing: 4) {
                         ProgressView().tint(.white)
-                        Text("Detectando bordas…")
+                        Text(t("detectandoBordas"))
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.6))
                     }
@@ -376,8 +376,8 @@ private struct ConfirmacaoCapaView: View {
 
                 Label(
                     deteccaoAutomatica
-                        ? "Borda detectada automaticamente"
-                        : "Recorte pelo guia",
+                        ? t("bordaDetectada")
+                        : t("recortePeloGuia"),
                     systemImage: deteccaoAutomatica ? "sparkles" : "crop"
                 )
                 .font(.caption)
@@ -387,7 +387,7 @@ private struct ConfirmacaoCapaView: View {
 
                 HStack(spacing: 16) {
                     Button(action: onRefazer) {
-                        Label("Refazer", systemImage: "arrow.counterclockwise")
+                        Label(t("refazer"), systemImage: "arrow.counterclockwise")
                             .font(.body.weight(.medium))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 15)
@@ -397,7 +397,7 @@ private struct ConfirmacaoCapaView: View {
                     }
 
                     Button(action: onUsar) {
-                        Label("Usar capa", systemImage: "checkmark")
+                        Label(t("usarCapa"), systemImage: "checkmark")
                             .font(.body.weight(.semibold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 15)

@@ -5,9 +5,9 @@ enum FiltroStatus: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var rotulo: String {
         switch self {
-        case .todos:       return "Todos"
-        case .disponiveis: return "Disponíveis"
-        case .emprestados: return "Emprestados"
+        case .todos:       return t("statusTodos")
+        case .disponiveis: return t("statusDisponiveis")
+        case .emprestados: return t("statusEmprestados")
         }
     }
 }
@@ -64,10 +64,10 @@ struct FiltroPesquisa {
         if status != .todos { partes.append(status.rotulo) }
         switch grupo {
         case .todos: break
-        case .qualquer: partes.append("Qualquer grupo")
+        case .qualquer: partes.append(t("qualquerGrupo"))
         case .especifico(let id): partes.append(nomeDoGrupo(id))
         }
-        if comFoto { partes.append("Com foto") }
+        if comFoto { partes.append(t("comFoto")) }
         if !pais.isEmpty { partes.append(Paises.nome(pais)) }
         return partes.joined(separator: " · ")
     }

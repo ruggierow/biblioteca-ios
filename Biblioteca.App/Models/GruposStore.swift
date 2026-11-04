@@ -5,7 +5,26 @@ import Foundation
 /// nome que o usuario deu a ele.
 struct Grupo: Identifiable, Equatable {
     let id: Int
-    let nome: String
+    private let nomeProprio: String?
+    private let chave: String?
+
+    /// Grupo com nome proprio — o que vem do `grupos.json`.
+    init(id: Int, nome: String) {
+        self.id = id
+        self.nomeProprio = nome
+        self.chave = nil
+    }
+
+    /// Grupo cujo nome e do app, e portanto traduzido: guarda a CHAVE, nao o
+    /// texto. `static let` so e avaliado uma vez — guardar o texto congelaria
+    /// o idioma do primeiro acesso.
+    init(id: Int, chave: String) {
+        self.id = id
+        self.nomeProprio = nil
+        self.chave = chave
+    }
+
+    var nome: String { nomeProprio ?? t(chave ?? "") }
 }
 
 /// Os NOMES dos grupos nao cabem no `biblioteca.txt`, que guarda so os numeros
@@ -18,7 +37,7 @@ struct Grupo: Identifiable, Equatable {
 final class GruposStore: ObservableObject {
     static let shared = GruposStore()
 
-    static let padrao = Grupo(id: 1, nome: "Grupo de Literatura")
+    static let padrao = Grupo(id: 1, chave: "grupoDeLiteraturaNome")
 
     @Published private(set) var grupos: [Grupo] = [padrao]
 
@@ -45,7 +64,7 @@ final class GruposStore: ObservableObject {
 
     /// O nome do grupo, ou "Grupo N" quando o `grupos.json` nao o descreve.
     func nome(_ id: Int) -> String {
-        grupos.first { $0.id == id }?.nome ?? "Grupo \(id)"
+        grupos.first { $0.id == id }?.nome ?? t("grupoNumero", [id])
     }
 
     /// Os grupos que o seletor deve oferecer: os conhecidos, mais os que
@@ -53,7 +72,7 @@ final class GruposStore: ObservableObject {
     func oferecidos(nosLivros livros: [Livro]) -> [Grupo] {
         let conhecidos = Set(grupos.map(\.id))
         let extras = Set(livros.flatMap(\.listaGrupos)).subtracting(conhecidos)
-        return (grupos + extras.map { Grupo(id: $0, nome: "Grupo \($0)") })
+        return (grupos + extras.map { Grupo(id: $0, nome: t("grupoNumero", [$0])) })
             .sorted { $0.id < $1.id }
     }
 }

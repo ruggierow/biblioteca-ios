@@ -50,7 +50,7 @@ struct CadastroView: View {
                             mostrarCampoISBN.toggle()
                             if mostrarCampoISBN { isbnFocado = true }
                         } label: {
-                            Label("Digitar ISBN", systemImage: "character.cursor.ibeam")
+                            Label(t("digitarIsbn"), systemImage: "character.cursor.ibeam")
                         }
                         .buttonStyle(.borderless)
                         Spacer()
@@ -65,7 +65,7 @@ struct CadastroView: View {
 
                     if mostrarCampoISBN {
                         HStack {
-                            TextField("ISBN (10 ou 13 dígitos)", text: $isbn)
+                            TextField(t("isbnDica"), text: $isbn)
                                 .keyboardType(.numberPad)
                                 .focused($isbnFocado)
                             Button {
@@ -87,11 +87,11 @@ struct CadastroView: View {
                             .foregroundColor(isbnStatusCor)
                     }
                 } header: {
-                    Text("Buscar por ISBN")
+                    Text(t("buscarPorIsbn"))
                 }
 
                 // ── Foto da capa ───────────────────────────────
-                Section("Foto da capa") {
+                Section(t("fotoDaCapa")) {
                     if let foto = fotoAtual {
                         VStack(spacing: 12) {
                             Image(uiImage: foto)
@@ -106,14 +106,14 @@ struct CadastroView: View {
                                 Button {
                                     mostrarCamera = true
                                 } label: {
-                                    Label("Trocar", systemImage: "camera")
+                                    Label(t("trocar"), systemImage: "camera")
                                 }
                                 Button(role: .destructive) {
                                     fotaNova = nil
                                     fotoExistente = nil
                                     fotoRemovida = true
                                 } label: {
-                                    Label("Remover", systemImage: "trash")
+                                    Label(t("remover"), systemImage: "trash")
                                 }
                             }
                             .font(.callout)
@@ -123,7 +123,7 @@ struct CadastroView: View {
                         Button {
                             mostrarCamera = true
                         } label: {
-                            Label("Fotografar capa", systemImage: "camera")
+                            Label(t("fotografarCapa"), systemImage: "camera")
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 4)
                         }
@@ -131,22 +131,22 @@ struct CadastroView: View {
                 }
 
                 // ── Dados ─────────────────────────────────────
-                Section("Dados do livro") {
-                    TextField("Título", text: $titulo)
+                Section(t("dadosDoLivro")) {
+                    TextField(t("titulo"), text: $titulo)
                     SugestoesCadastroView(sugestoes: sugestoesTitulo) { sugestao in
                         titulo = sugestao
                     }
-                    TextField("Ano de publicação", text: $ano)
+                    TextField(t("anoDePublicacao"), text: $ano)
                         .keyboardType(.numberPad)
-                    TextField("Local do exemplar", text: $local)
+                    TextField(t("localDoExemplar"), text: $local)
                     SugestoesCadastroView(sugestoes: sugestoesLocal) { sugestao in
                         local = sugestao
                     }
                     // Livro sem país é o estado normal — por isso o vazio vem
                     // primeiro e continua alcançável: sem ele não haveria como
                     // DESFAZER um país posto por engano.
-                    Picker("País", selection: $pais) {
-                        Text("— sem país —").tag("")
+                    Picker(t("pais"), selection: $pais) {
+                        Text(t("semPais")).tag("")
                         ForEach(Paises.ordenados, id: \.iso) { p in
                             Text(p.nome).tag(p.iso)
                         }
@@ -154,7 +154,7 @@ struct CadastroView: View {
                         // senão o Picker abre em branco e salvar apaga o país
                         // do livro sem avisar.
                         if !pais.isEmpty && !Paises.conhecido(pais) {
-                            Text("\(pais) (fora da tabela)").tag(pais)
+                            Text(t("foraDaTabela", [pais])).tag(pais)
                         }
                     }
                 }
@@ -164,7 +164,7 @@ struct CadastroView: View {
                     ForEach(autores.indices, id: \.self) { i in
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
-                                TextField("Nome do autor", text: $autores[i])
+                                TextField(t("nomeDoAutor"), text: $autores[i])
                                 if autores.count > 1 {
                                     Button {
                                         autores.remove(at: i)
@@ -180,7 +180,7 @@ struct CadastroView: View {
                             }
                         }
                     }
-                    Button("+ Adicionar autor") { autores.append("") }
+                    Button(t("adicionarAutor")) { autores.append("") }
                 }
 
                 // ── Temas ─────────────────────────────────────
@@ -188,7 +188,7 @@ struct CadastroView: View {
                     ForEach(temas.indices, id: \.self) { i in
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
-                                TextField("Tema", text: $temas[i])
+                                TextField(t("tema"), text: $temas[i])
                                 if temas.count > 1 {
                                     Button {
                                         temas.remove(at: i)
@@ -204,19 +204,19 @@ struct CadastroView: View {
                             }
                         }
                     }
-                    Button("+ Adicionar tema") { temas.append("") }
+                    Button(t("adicionarTema")) { temas.append("") }
                 }
 
                 // ── Extras ────────────────────────────────────
-                Section("Extras") {
-                    Toggle("Emprestado", isOn: $emprestado)
-                    TextField("Comentários", text: $comentarios, axis: .vertical)
+                Section(t("extras")) {
+                    Toggle(t("emprestado"), isOn: $emprestado)
+                    TextField(t("comentarios"), text: $comentarios, axis: .vertical)
                         .lineLimit(3...6)
                 }
 
                 // Um livro pode estar em mais de um grupo — e assim que o Mac
                 // e o Windows guardam, na coluna 8 ("1;3").
-                Section("Grupos de literatura") {
+                Section(t("gruposDeLiteratura")) {
                     ForEach(gruposStore.oferecidos(nosLivros: store.livros)) { g in
                         Toggle(g.nome, isOn: Binding(
                             get: { gruposSelecionados.contains(g.id) },
@@ -228,15 +228,15 @@ struct CadastroView: View {
                     }
                 }
             }
-            .navigationTitle(editando ? "Editar livro" : "Novo livro")
+            .navigationTitle(editando ? t("editarLivro") : t("novoLivro"))
             .navigationBarTitleDisplayMode(.inline)
             .tint(.bibPrimary)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancelar") { dismiss() }
+                    Button(t("cancelar")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Salvar") { salvar() }
+                    Button(t("salvar")) { salvar() }
                         .disabled(titulo.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
@@ -369,18 +369,18 @@ struct CadastroView: View {
                     comentarios = r.comentarios
                 }
                 comentarios = comISBN(comentarios, isbn)
-                isbnStatus = "Preenchido com sucesso."
+                isbnStatus = t("preenchidoComSucesso")
                 isbnStatusCor = .bibAccent
             } else {
                 comentarios = comISBN(comentarios, isbn)
-                isbnStatus = "ISBN não encontrado, mas o número foi guardado."
+                isbnStatus = t("isbnNaoEncontrado")
                 isbnStatusCor = .red
             }
         } catch ISBNError.invalido {
-            isbnStatus = "ISBN inválido (deve ter 10 ou 13 dígitos)."
+            isbnStatus = t("isbnInvalido")
             isbnStatusCor = .red
         } catch {
-            isbnStatus = "Erro ao buscar. Verifique a internet."
+            isbnStatus = t("erroAoBuscar")
             isbnStatusCor = .red
         }
         buscandoISBN = false

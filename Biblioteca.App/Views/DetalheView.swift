@@ -32,13 +32,13 @@ struct DetalheView: View {
                 .listRowInsets(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
             }
 
-            Section("Identificação") {
-                LabeledContent("Título", value: livro.titulo)
+            Section(t("identificacao")) {
+                LabeledContent(t("titulo"), value: livro.titulo)
                 if !livro.ano.isEmpty {
-                    LabeledContent("Ano", value: livro.ano)
+                    LabeledContent(t("ano"), value: livro.ano)
                 }
                 if !livro.local.isEmpty {
-                    LabeledContent("Local", value: livro.local)
+                    LabeledContent(t("local"), value: livro.local)
                 }
             }
 
@@ -58,16 +58,16 @@ struct DetalheView: View {
                 }
             }
 
-            Section("Status") {
-                LabeledContent("Emprestado", value: livro.emprestado ? "Sim" : "Não")
-                LabeledContent("Grupo de literatura",
+            Section(t("status")) {
+                LabeledContent(t("emprestado"), value: livro.emprestado ? t("sim") : t("nao"))
+                LabeledContent(t("grupoDeLiteratura"),
                                value: livro.listaGrupos.isEmpty
-                                    ? "Não"
+                                    ? t("nao")
                                     : livro.listaGrupos.map(GruposStore.shared.nome).joined(separator: ", "))
             }
 
             if !livro.comentarios.isEmpty {
-                Section("Comentários") {
+                Section(t("comentarios")) {
                     ComentariosComLinksView(texto: livro.comentarios, titulo: livro.titulo)
                 }
             }
@@ -77,7 +77,7 @@ struct DetalheView: View {
         .tint(.bibPrimary)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Editar") { mostrarEdicao = true }
+                Button(t("editar")) { mostrarEdicao = true }
             }
         }
         .sheet(isPresented: $mostrarEdicao, onDismiss: {
@@ -109,7 +109,7 @@ private struct ComentariosComLinksView: View {
                 .font(.body)
                 .textSelection(.enabled)
             if copiado {
-                Text("Título copiado — cole na busca do Kindle.")
+                Text(t("tituloCopiado"))
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .transition(.opacity)
@@ -161,7 +161,7 @@ private struct ComentariosComLinksView: View {
                 nome = rotulo
                 antes = prefixo
             } else if achado.lowercased().hasPrefix("kindle:") {
-                nome = "app Kindle"
+                nome = t("appKindle")
             } else {
                 nome = url.host ?? achado
                 if nome.lowercased().hasPrefix("www.") { nome = String(nome.dropFirst(4)) }
@@ -205,7 +205,7 @@ private struct CapaSemFotoView: View {
                     .frame(width: 72, height: 72)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
-                Text("Sem foto da capa")
+                Text(t("semFotoDaCapa"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

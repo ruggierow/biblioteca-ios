@@ -9,9 +9,9 @@ enum UsoDaCamera {
     var explicacao: String {
         switch self {
         case .scanner:
-            return "Para escanear o código de barras, permita o acesso à câmera nas configurações do dispositivo."
+            return t("permissaoScanner")
         case .capa:
-            return "Para fotografar a capa, permita o acesso à câmera nas configurações do dispositivo."
+            return t("permissaoFoto")
         }
     }
 }
@@ -29,7 +29,7 @@ struct PermissaoNegadaView: View {
 
     private var explicacao: String {
         estado == .restrita
-            ? "O acesso à câmera está bloqueado neste dispositivo."
+            ? t("cameraBloqueada")
             : uso.explicacao
     }
 
@@ -42,7 +42,7 @@ struct PermissaoNegadaView: View {
                     .font(.system(size: 62))
                     .foregroundStyle(.white.opacity(0.55))
 
-                Text("Acesso à câmera negado")
+                Text(t("acessoCameraNegado"))
                     .font(.title3.weight(.bold))
                     .foregroundStyle(.white)
                     .padding(.top, 20)
@@ -58,7 +58,7 @@ struct PermissaoNegadaView: View {
                         Button {
                             Permissoes.abrirConfiguracoes()
                         } label: {
-                            Label("Abrir Configurações", systemImage: "gearshape")
+                            Label(t("abrirConfiguracoes"), systemImage: "gearshape")
                                 .font(.body.weight(.semibold))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
@@ -68,7 +68,7 @@ struct PermissaoNegadaView: View {
                     }
 
                     if let onDigitarISBN {
-                        Button("Digitar ISBN", action: onDigitarISBN)
+                        Button(t("digitarIsbn"), action: onDigitarISBN)
                             .font(.body.weight(.semibold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -76,7 +76,7 @@ struct PermissaoNegadaView: View {
                             .foregroundStyle(.white)
                     }
 
-                    Button("Cancelar", action: onCancelar)
+                    Button(t("cancelar"), action: onCancelar)
                         .font(.body)
                         .foregroundStyle(.white.opacity(0.55))
                         .padding(.top, 2)
