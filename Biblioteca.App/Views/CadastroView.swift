@@ -160,7 +160,7 @@ struct CadastroView: View {
                 }
 
                 // ── Autores ───────────────────────────────────
-                Section("Autor(es)") {
+                Section(t("autores")) {
                     ForEach(autores.indices, id: \.self) { i in
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
@@ -184,7 +184,7 @@ struct CadastroView: View {
                 }
 
                 // ── Temas ─────────────────────────────────────
-                Section("Tema(s)") {
+                Section(t("temasRotulo")) {
                     ForEach(temas.indices, id: \.self) { i in
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {

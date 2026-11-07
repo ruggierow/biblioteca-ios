@@ -43,7 +43,7 @@ struct DetalheView: View {
             }
 
             if !livro.autores.filter({ !$0.isEmpty }).isEmpty {
-                Section("Autor(es)") {
+                Section(t("autores")) {
                     ForEach(livro.autores.filter { !$0.isEmpty }, id: \.self) {
                         Text($0)
                     }
@@ -51,7 +51,7 @@ struct DetalheView: View {
             }
 
             if !livro.temas.filter({ !$0.isEmpty }).isEmpty {
-                Section("Tema(s)") {
+                Section(t("temasRotulo")) {
                     ForEach(livro.temas.filter { !$0.isEmpty }, id: \.self) {
                         Text($0)
                     }
