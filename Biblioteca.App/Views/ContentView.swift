@@ -4,6 +4,7 @@ struct ContentView: View {
     @EnvironmentObject var store: BibliotecaStore
 
     @State private var mostrarScanner = false
+    @State private var mostrarSeletorDePasta = false
     @State private var isbnEscaneado: String? = nil
 
     private var versaoApp: String {
@@ -68,6 +69,16 @@ struct ContentView: View {
                         }
                         .disabled(store.arquivoURL == nil)
 
+                        // Sem `.disabled`, de propósito: é a única saída de
+                        // quem abriu o app pela primeira vez. Tudo o que está
+                        // acima depende de haver um arquivo.
+                        Button {
+                            mostrarSeletorDePasta = true
+                        } label: {
+                            MenuRow(icon: "folder", title: t("selecionarPasta"))
+                        }
+                        .buttonStyle(.plain)
+
                         NavigationLink {
                             SincronizacaoView()
                         } label: {
@@ -128,6 +139,7 @@ struct ContentView: View {
             } message: {
                 Text(store.erroMensagem ?? "")
             }
+            .fluxoSelecionarPasta(mostrando: $mostrarSeletorDePasta)
             .sheet(isPresented: $mostrarScanner) {
                 ScannerView(onScanned: { codigo in isbnEscaneado = codigo },
                             onDigitarISBN: { isbnEscaneado = "" })

@@ -2,6 +2,23 @@ import Foundation
 import SwiftUI
 import Combine
 
+/// O que há na pasta recém-escolhida, ANTES de vincular qualquer arquivo.
+///
+/// Olhar antes de agir é o que permite perguntar algo que o usuário consegue
+/// responder — "achei 757 livros aqui, uso esta biblioteca?" em vez de "quer
+/// usar o arquivo?" sem ele saber o que há dentro.
+struct ConteudoDaPasta {
+    let pasta: URL
+    let temArquivo: Bool
+    var livros: Int = 0
+    /// Há arquivo e não deu para lê-lo. Nunca criar por cima neste caso: pode
+    /// ser a biblioteca de alguém, ilegível por permissão ou ainda baixando
+    /// do iCloud.
+    var erroDeLeitura: String? = nil
+
+    var nome: String { pasta.lastPathComponent }
+}
+
 class BibliotecaStore: ObservableObject {
     @Published var livros: [Livro] = []
     @Published var arquivoURL: URL? = nil
@@ -59,7 +76,12 @@ class BibliotecaStore: ObservableObject {
     // MARK: - Vínculo com pasta
 
     /// Recebe a URL da PASTA selecionada pelo fileImporter.
-    func vincularPasta(_ pasta: URL) {
+    /// Vincula a pasta e, por padrão, carrega o `biblioteca.txt` dela.
+    ///
+    /// `carregar: false` serve ao caso de o arquivo ainda NÃO existir — ler
+    /// antes de criar só produziria um erro na tela do usuário por algo que
+    /// o app está prestes a resolver sozinho.
+    func vincularPasta(_ pasta: URL, carregar: Bool = true) {
         guard pasta.startAccessingSecurityScopedResource() else { return }
         do {
             let bookmark = try pasta.bookmarkData(options: .minimalBookmark,
@@ -71,13 +93,44 @@ class BibliotecaStore: ObservableObject {
             arquivoURL = pasta.appendingPathComponent("biblioteca.txt")
             configurarFotoStore(para: pasta)
             GruposStore.shared.carregar(de: pasta)
-            if let url = arquivoURL {
+            if carregar, let url = arquivoURL {
                 carregarDoArquivoEmSegundoPlano(url)
             }
         } catch {
             pasta.stopAccessingSecurityScopedResource()
             erroMensagem = t("erroAoVincularPasta", [error.localizedDescription])
         }
+    }
+
+    /// Olha a pasta escolhida SEM vincular nada nem mexer na lista aberta.
+    func olharPasta(_ pasta: URL) -> ConteudoDaPasta {
+        let acesso = pasta.startAccessingSecurityScopedResource()
+        defer { if acesso { pasta.stopAccessingSecurityScopedResource() } }
+
+        let txt = pasta.appendingPathComponent("biblioteca.txt")
+        guard FileManager.default.fileExists(atPath: txt.path) else {
+            return ConteudoDaPasta(pasta: pasta, temArquivo: false)
+        }
+        do {
+            let quantos = parsear(try lerCoordenado(txt)).count
+            return ConteudoDaPasta(pasta: pasta, temArquivo: true, livros: quantos)
+        } catch {
+            return ConteudoDaPasta(pasta: pasta, temArquivo: true,
+                                   erroDeLeitura: error.localizedDescription)
+        }
+    }
+
+    /// Cria o `biblioteca.txt` na pasta escolhida e passa a usá-lo.
+    ///
+    /// O que vai dentro depende de [levarLivros], e quem decide é o usuário:
+    /// `false` começa uma biblioteca nova e vazia — a lista aberta é
+    /// esquecida AQUI, não no disco, e o arquivo de onde ela veio continua
+    /// intacto na pasta dele. No primeiro uso a lista já está vazia e os dois
+    /// casos dão no mesmo, então a tela não pergunta nada.
+    func criarNaPasta(_ pasta: URL, levarLivros: Bool) {
+        if !levarLivros { livros = [] }
+        vincularPasta(pasta, carregar: false)
+        salvar()
     }
 
     private func restaurarArquivo() {

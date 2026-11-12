@@ -20,7 +20,18 @@ final class IdiomaNaTelaUITests: XCTestCase {
 
     private func abrir(idioma: String) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-biblioteca-idioma", idioma]
+        // O MESMO truque do idioma, agora para o vinculo: um valor no dominio
+        // de argumentos vence o que esta gravado. `bibliotecaPastaBookmark`
+        // e lido com `data(forKey:)`, e um argumento chega como String — que
+        // nao e Data, entao a leitura devolve nil e o app abre como se nunca
+        // tivesse vinculado pasta nenhuma.
+        //
+        // Sem isto o teste depende do ESTADO DO APARELHO: ele afirma "No file
+        // linked", e qualquer simulador onde alguem ja vinculou uma pasta o
+        // reprova. Aconteceu duas vezes comigo, em 07/11 e em 12/11, nas duas
+        // por resíduo das minhas proprias medicoes.
+        app.launchArguments = ["-biblioteca-idioma", idioma,
+                               "-bibliotecaPastaBookmark", ""]
         app.launch()
         return app
     }
@@ -29,6 +40,7 @@ final class IdiomaNaTelaUITests: XCTestCase {
         let app = abrir(idioma: "en")
         XCTAssertTrue(app.staticTexts["Scan a book"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Add a book"].exists)
+        XCTAssertTrue(app.staticTexts["Choose folder"].exists)
         XCTAssertTrue(app.staticTexts["Sync"].exists)
         XCTAssertTrue(app.staticTexts["No file linked"].exists)
 
@@ -36,6 +48,7 @@ final class IdiomaNaTelaUITests: XCTestCase {
         // esquecido, e é o que faltava quando eu medi o furo.
         XCTAssertFalse(app.staticTexts["Escanear livro"].exists)
         XCTAssertFalse(app.staticTexts["Cadastro"].exists)
+        XCTAssertFalse(app.staticTexts["Selecionar pasta"].exists)
         XCTAssertFalse(app.staticTexts["Sincronização"].exists)
         XCTAssertFalse(app.staticTexts["Nenhum arquivo vinculado"].exists)
     }
@@ -44,10 +57,12 @@ final class IdiomaNaTelaUITests: XCTestCase {
         let app = abrir(idioma: "pt")
         XCTAssertTrue(app.staticTexts["Escanear livro"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Cadastro"].exists)
+        XCTAssertTrue(app.staticTexts["Selecionar pasta"].exists)
         XCTAssertTrue(app.staticTexts["Sincronização"].exists)
 
         XCTAssertFalse(app.staticTexts["Scan a book"].exists)
         XCTAssertFalse(app.staticTexts["Add a book"].exists)
+        XCTAssertFalse(app.staticTexts["Choose folder"].exists)
         XCTAssertFalse(app.staticTexts["Sync"].exists)
     }
 

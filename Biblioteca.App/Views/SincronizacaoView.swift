@@ -128,14 +128,7 @@ struct SincronizacaoView: View {
         }
         .navigationTitle(t("sincronizacao"))
         .tint(.bibPrimary)
-        .fileImporter(
-            isPresented: $mostrarSeletor,
-            allowedContentTypes: [.folder],
-            allowsMultipleSelection: false
-        ) { result in
-            if case .success(let urls) = result, let url = urls.first {
-                store.vincularPasta(url)
-            }
-        }
+        // O MESMO fluxo da tela inicial: um caminho só para escolher pasta.
+        .fluxoSelecionarPasta(mostrando: $mostrarSeletor)
     }
 }

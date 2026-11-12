@@ -252,6 +252,20 @@ let TEXTOS: [String: [String: String]] = [
         "cameraNaoDisponivel": "Câmera não disponível",
         "semCameraNoDispositivo": "Este dispositivo não tem câmera (por exemplo, o simulador). Digite o ISBN manualmente.",
 
+        // --- selecionar pasta ---
+        "selecionarPasta": "Selecionar pasta",
+        "selecionarPastaDica": "Onde o seu biblioteca.txt está — ou vai ficar",
+        "achouBiblioteca": "Encontrei uma biblioteca nesta pasta",
+        "achouBibliotecaCorpo": "A pasta \"${0}\" já tem um biblioteca.txt com ${1} livro(s).",
+        "usarEstaBiblioteca": "Usar esta biblioteca",
+        "escolherOutraPasta": "Escolher outra pasta",
+        "criouArquivo": "Criei o biblioteca.txt em \"${0}\". Pode começar a cadastrar.",
+        "naoConsegueLerTitulo": "Não consegui ler esta biblioteca",
+        "naoConsegueLer": "Há um biblioteca.txt nesta pasta, mas não consegui lê-lo: ${0}",
+        "pastaVaziaComLivros": "Esta pasta está vazia. O que fazer com os ${0} livros que estão abertos?",
+        "comecarVazia": "Criar uma biblioteca nova e vazia",
+        "levarParaPasta": "Levar os ${0} para esta pasta",
+
         // --- sincronização ---
         "sincronizacao": "Sincronização",
         "livrosCarregadosRotulo": "Livros carregados",
@@ -405,6 +419,20 @@ let TEXTOS: [String: [String: String]] = [
         "aponteParaCodigo": "Point at the book's barcode",
         "cameraNaoDisponivel": "Camera unavailable",
         "semCameraNoDispositivo": "This device has no camera (the simulator, for example). Type the ISBN by hand.",
+
+        // --- selecionar pasta ---
+        "selecionarPasta": "Choose folder",
+        "selecionarPastaDica": "Where your biblioteca.txt is — or will be",
+        "achouBiblioteca": "Found a library in this folder",
+        "achouBibliotecaCorpo": "The folder \"${0}\" already has a biblioteca.txt with ${1} book(s).",
+        "usarEstaBiblioteca": "Use this library",
+        "escolherOutraPasta": "Choose another folder",
+        "criouArquivo": "Created biblioteca.txt in \"${0}\". You can start adding books.",
+        "naoConsegueLerTitulo": "This library could not be read",
+        "naoConsegueLer": "There is a biblioteca.txt in this folder, but it could not be read: ${0}",
+        "pastaVaziaComLivros": "This folder is empty. What should happen to the ${0} books you have open?",
+        "comecarVazia": "Start a new, empty library",
+        "levarParaPasta": "Move the ${0} here",
 
         // --- sincronização ---
         "sincronizacao": "Sync",
